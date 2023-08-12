@@ -1,0 +1,9 @@
+{
+  "lock": false,
+  "tasks": {
+    "prep": "deno lint && deno fmt"
+  },
+  "fmt": {
+    "semiColons": false
+  }
+}
