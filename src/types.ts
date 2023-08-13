@@ -19,6 +19,7 @@ export type ApiConfig = {
     ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>
   >
   defaultHeaders?: Record<string, string>
+  logger?: Logger
 }
 
 export type PathlessApiResourceConfig<T extends Path> =
@@ -91,9 +92,48 @@ export type ApiClientAction<
       params?: Params<T1, T2>,
       options?: RequestInit,
     ) => Promise<ApiResponse<T1>>
-  : (params: Params<T1, T2>, options?: RequestInit) => Promise<ApiResponse<T1>>
+  : (
+    params: Params<T1, T2>,
+    options?: RequestInit,
+  ) => Promise<ApiResponse<T1>>
+
+// Middleware types
+export type ApiMiddleware<T extends ApiConfig> = {
+  [K in keyof T["resources"]]: ApiMiddlewareActionHandlers<T["resources"][K]>
+}
+
+export type ApiMiddlewareActionHandlers<
+  T extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+> = {
+  [K in keyof T["actions"]]: T["actions"][K] extends ApiActionConfig
+    ? ApiMiddlewareActionHandler<T["actions"][K], T>
+    : never
+}
+
+export type ApiMiddlewareActionHandler<
+  T1 extends ApiActionConfig,
+  T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+> = (
+  req: Request,
+  params: Params<T1, T2>,
+) => T1["dataSchema"] extends ZodType
+  ? TypeOf<T1["dataSchema"]> | Promise<TypeOf<T1["dataSchema"]>>
+  : void | Promise<void>
+
+export type ApiMiddlewareHandlerResult<T extends ApiActionConfig> =
+  | (T["dataSchema"] extends ZodType ? TypeOf<T["dataSchema"]>
+    : void)
+  | Response
 
 // Utility types
+export type LogLevel = "none" | "error" | "debug"
+
+export type Params<
+  T1 extends ApiActionConfig,
+  T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+> = IsEmptyObject<CombinedParams<T1, T2>> extends true ? never
+  : CombinedParams<T1, T2>
+
 export type ParamProperty =
   | ZodString
   | ZodNumber
@@ -142,12 +182,6 @@ export type WithURLParamsSchema = {
   urlParamsSchema: RequiredParamsSchema
 }
 
-export type Params<
-  T1 extends ApiActionConfig,
-  T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-> = IsEmptyObject<CombinedParams<T1, T2>> extends true ? never
-  : CombinedParams<T1, T2>
-
 export type CombinedParams<
   T1 extends ApiActionConfig,
   T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
@@ -191,6 +225,7 @@ export type HasMembersExtending<T1, T2> = Extract<T1, T2> extends never ? false
 export type ApiResponse<T extends ApiActionConfig> =
   & {
     status: number
+    statusText: string
   }
   & (
     | {
@@ -202,3 +237,11 @@ export type ApiResponse<T extends ApiActionConfig> =
       data: null
     }
   )
+
+export type Logger = {
+  debug: LogFunction
+  error: LogFunction
+  info: LogFunction
+}
+
+export type LogFunction = (text: string) => void

@@ -1,3 +1,4 @@
+import { StatusCode } from "./status_codes.ts"
 import type {
   ApiActionConfig,
   ApiClient,
@@ -94,7 +95,7 @@ function createClientGetAction<
     typeof actionConfig.headersSchema === "undefined"
   ) {
     return (options?: RequestInit) =>
-      sendRequest(url, "GET", actionConfig.dataSchema, {
+      sendRequest(url, "GET", actionConfig, apiConfig, {
         ...options,
         headers: {
           ...apiConfig.defaultHeaders,
@@ -111,7 +112,8 @@ function createClientGetAction<
     return sendRequest(
       urlWithParams(url, actionConfig, resourceConfig, params),
       "GET",
-      actionConfig.dataSchema,
+      actionConfig,
+      apiConfig,
       {
         ...options,
         headers: createActionHeaders(
@@ -148,7 +150,7 @@ function createClientPostAction<
     typeof actionConfig.bodySchema === "undefined"
   ) {
     return (options?: RequestInit) =>
-      sendRequest(url, "POST", actionConfig.dataSchema, {
+      sendRequest(url, "POST", actionConfig, apiConfig, {
         ...options,
         headers: {
           ...apiConfig.defaultHeaders,
@@ -182,7 +184,8 @@ function createClientPostAction<
         params,
       ),
       "POST",
-      actionConfig.dataSchema,
+      actionConfig,
+      apiConfig,
       {
         ...options,
         headers,
@@ -197,10 +200,15 @@ function createClientPostAction<
 async function sendRequest<const T extends ApiActionConfig>(
   url: string,
   method: "GET" | "POST",
-  dataSchema?: T["dataSchema"],
+  actionConfig: T,
+  apiConfig: ApiConfig,
   options?: RequestInit,
 ): Promise<ApiResponse<T>> {
   try {
+    // Log fetch event
+    apiConfig.logger?.debug(`Fetching: ${url}`)
+
+    // Send request using fetch
     const res = await fetch(url, {
       ...options,
       method,
@@ -208,43 +216,80 @@ async function sendRequest<const T extends ApiActionConfig>(
 
     if (!res.ok) {
       // Log HTTP error
-      console.error(
-        `Error fetching: ${url}, Status: ${res.status} ${res.statusText} `,
+      apiConfig.logger?.error(
+        `Error fetching: ${url}, Status: ${res.status} ${res.statusText}`,
       )
 
+      // Return error response
       return {
         ok: false,
         data: null,
         status: res.status,
+        statusText: res.statusText,
       }
     }
 
-    // If no data schema, return response without data
-    if (!dataSchema) {
+    // If no data schema, return successful response without data
+    if (!actionConfig.dataSchema) {
       return {
         ok: true,
         data: null,
         status: res.status,
+        statusText: res.statusText,
       }
     }
 
     // Get and parse data
-    const json = await res.json()
-    const data = await dataSchema.parseAsync(json)
+    const dataType = actionConfig.dataType ?? "JSON"
 
+    // Log data get event
+    apiConfig.logger?.debug(`Getting data of type: ${dataType}`)
+
+    // Get data from response
+    const json = actionConfig.dataType === "Text"
+      ? await res.text()
+      : await res.json()
+
+    // Log data parse event
+    apiConfig.logger?.debug(`Parsing data of type: ${dataType}`)
+
+    // Parse data
+    const parsed = await actionConfig.dataSchema.safeParseAsync(json)
+
+    // Handle failed parse
+    if (!parsed.success) {
+      // Log parse error
+      apiConfig.logger?.error(
+        `Error when parsing data of type: ${dataType}
+        ${JSON.stringify(parsed.error, null, 2)}`,
+      )
+
+      // return response with custom error status
+      return {
+        ok: false,
+        data: null,
+        status: StatusCode.DataParseError,
+        statusText: "Data not parsed successfully",
+      }
+    }
+
+    // Return successful response with parsed data
     return {
       ok: true,
-      data,
+      data: parsed.data,
       status: res.status,
+      statusText: res.statusText,
     }
   } catch (e) {
-    // Catch and log unhandled errors
-    console.error(e)
+    // Log error
+    apiConfig.logger?.error(e)
 
+    // Return response with custom error status
     return {
       ok: false,
       data: null,
-      status: 500,
+      status: StatusCode.UncaughtClientError,
+      statusText: "Unhandled client-side error",
     }
   }
 }
