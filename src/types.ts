@@ -1,13 +1,14 @@
-import {
-  type TypeOf,
-  type ZodBoolean,
-  type ZodNullable,
-  type ZodNumber,
-  type ZodObject,
-  type ZodOptional,
+import type {
+  TypeOf,
+  ZodBoolean,
+  ZodEnum,
+  ZodNullable,
+  ZodNumber,
+  ZodObject,
+  ZodOptional,
   ZodRawShape,
-  type ZodString,
-  type ZodType,
+  ZodString,
+  ZodType,
 } from "zod"
 
 // Config types
@@ -93,7 +94,11 @@ export type ApiClientAction<
   : (params: Params<T1, T2>, options?: RequestInit) => Promise<ApiResponse<T1>>
 
 // Utility types
-export type ParamProperty = ZodString | ZodNumber | ZodBoolean
+export type ParamProperty =
+  | ZodString
+  | ZodNumber
+  | ZodBoolean
+  | ZodEnum<[string, ...string[]]>
 
 export type ParamsSchema<T extends string = string> = ZodObject<
   {

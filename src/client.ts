@@ -148,7 +148,7 @@ function createClientPostAction<
     typeof actionConfig.bodySchema === "undefined"
   ) {
     return (options?: RequestInit) =>
-      sendRequest(url, "GET", actionConfig.dataSchema, {
+      sendRequest(url, "POST", actionConfig.dataSchema, {
         ...options,
         headers: {
           ...apiConfig.defaultHeaders,
@@ -181,7 +181,7 @@ function createClientPostAction<
         resourceConfig,
         params,
       ),
-      "GET",
+      "POST",
       actionConfig.dataSchema,
       {
         ...options,
