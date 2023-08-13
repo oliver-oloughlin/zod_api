@@ -1,104 +1,103 @@
-import { z } from "zod"
 import type {
+  ApiActionConfig,
   ApiClient,
+  ApiClientAction,
   ApiClientActions,
   ApiConfig,
+  ApiGetActionConfig,
+  ApiPostActionConfig,
   ApiResourceConfig,
+  ApiResponse,
+  BodyType,
+  Params,
+  ParamsSchema,
+  Path,
+  PathlessApiResourceConfig,
+  WithURLParamsSchema,
 } from "./types.ts"
 
 /* == API CREATION FUNCTIONS == */
 
-/**
- * Create an API client from an API configuration.
- *
- * @param config
- * @returns
- */
 export function zodApiClient<const T extends ApiConfig>(
   config: T,
 ): ApiClient<T> {
-  const resources = Object.fromEntries(
+  const apiClient = Object.fromEntries(
     Object.entries(config.resources).map(([key, resourceConfig]) => [
       key,
-      createResourceActions(resourceConfig, config),
+      createApiClientActions(resourceConfig, config),
     ]),
   )
 
-  return resources as ApiClient<T>
+  return apiClient as ApiClient<T>
 }
 
-const client = zodApiClient({
-  baseUrl: "",
-  resources: {
-    test: {
-      path: "/test/:id",
-      actions: {
-        get: {
-          urlParamsSchema: z.object({
-            id: z.string(),
-          }),
-        },
-      },
-    },
-  },
-})
+export function zodApiResource<
+  const T1 extends Path,
+  const T2 extends PathlessApiResourceConfig<T1>,
+  const T3 extends ApiResourceConfig<T1, T2> = ApiResourceConfig<T1, T2>,
+>(
+  path: T1,
+  config: T2,
+) {
+  return {
+    path,
+    ...config,
+  } as T3
+}
 
-client.test.get()
-
-/**
- * Create resource actions from resource definition
- *
- * @param resDef
- * @param apiDef
- * @returns
- */
-function createResourceActions<const T extends ApiResourceConfig>(
-  resDef: T,
-  apiDef: ApiConfig,
-): ApiClientActions<T["actions"]> {
+function createApiClientActions<
+  const T extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+>(
+  resourceConfig: T,
+  apiConfig: ApiConfig,
+): ApiClientActions<T["actions"], T> {
   const actions = Object.fromEntries(
-    Object.entries(resDef.actions)
-      .map(([key, actionDef]) => [
+    Object.entries(resourceConfig.actions)
+      .map(([key, actionConfig]) => [
         key,
         key === "get"
-          ? createGetInstance(actionDef, resDef, apiDef)
+          ? createClientGetAction(
+            actionConfig as ApiGetActionConfig,
+            resourceConfig,
+            apiConfig,
+          )
           : key === "post"
-          ? createPostInstance(actionDef, resDef, apiDef)
+          ? createClientPostAction(
+            actionConfig as ApiPostActionConfig,
+            resourceConfig,
+            apiConfig,
+          )
           : null,
       ])
       .filter(([_, action]) => !!action),
   )
 
-  return actions as ApiClientActions<T["actions"]>
+  return actions as ApiClientActions<T["actions"], T>
 }
 
-/**
- * Create GET action handler
- *
- * @param getDef
- * @param resDef
- * @param apiDef
- * @returns
- */
-function createGetInstance<const T extends GetConfig>(
-  getDef: T,
-  resDef: ResourceDefinition,
-  apiDef: ApiDefinition,
-): ActionInstance<T> {
+function createClientGetAction<
+  const T1 extends ApiGetActionConfig,
+  const T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+>(
+  actionConfig: T1,
+  resourceConfig: T2,
+  apiConfig: ApiConfig,
+): ApiClientAction<T1, T2> {
   // Collect resource objects/options
-  const url = (apiDef.baseUrl + resDef.path) as FullURL
+  const url = apiConfig.baseUrl + resourceConfig.path
+  const withUrlParamsSchema = resourceConfig as unknown as WithURLParamsSchema
 
   // If resource takes no parameters, create a simple GET handler
   if (
-    typeof getDef.searchParamsSchema === "undefined" &&
-    typeof getDef.urlParamsSchema === "undefined" &&
-    typeof getDef.headersSchema === "undefined"
+    typeof actionConfig.searchParamsSchema === "undefined" &&
+    typeof withUrlParamsSchema.urlParamsSchema === "undefined" &&
+    typeof actionConfig.headersSchema === "undefined"
   ) {
     return (options?: RequestInit) =>
-      sendGetRequest(url, getDef.dataSchema, {
+      sendRequest(url, "GET", actionConfig.dataSchema, {
         ...options,
         headers: {
-          ...apiDef.defaultHeaders,
+          ...apiConfig.defaultHeaders,
           ...options?.headers,
         },
       })
@@ -106,50 +105,53 @@ function createGetInstance<const T extends GetConfig>(
 
   // Create handler function
   const handler: (
-    params?: Params<T>,
+    params?: Params<T1, T2>,
     options?: RequestInit,
-  ) => Promise<ApiResponse<T>> = (params, options) => {
-    return sendGetRequest(
-      urlWithParams(url, getDef, params),
-      getDef.dataSchema,
+  ) => Promise<ApiResponse<T1>> = (params, options) => {
+    return sendRequest(
+      urlWithParams(url, actionConfig, resourceConfig, params),
+      "GET",
+      actionConfig.dataSchema,
       {
         ...options,
-        headers: createActionHeaders(getDef, resDef, apiDef, params, options),
+        headers: createActionHeaders(
+          actionConfig,
+          resourceConfig,
+          apiConfig,
+          params,
+          options,
+        ),
       },
     )
   }
 
-  return handler as ActionInstance<T>
+  return handler as ApiClientAction<T1, T2>
 }
 
-/**
- * Create POST action handler
- *
- * @param postDef
- * @param resDef
- * @param apiDef
- * @returns
- */
-function createPostInstance<const T extends PostDefinition>(
-  postDef: T,
-  resDef: ResourceDefinition,
-  apiDef: ApiDefinition,
-): ActionInstance<T> {
+function createClientPostAction<
+  const T1 extends ApiPostActionConfig,
+  const T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+>(
+  actionConfig: T1,
+  resourceConfig: T2,
+  apiConfig: ApiConfig,
+): ApiClientAction<T1, T2> {
   // Collect resource objects/options
-  const url = (apiDef.baseUrl + resDef.path) as FullURL
+  const url = apiConfig.baseUrl + resourceConfig.path
+  const withUrlParamsSchema = resourceConfig as unknown as WithURLParamsSchema
 
   // If resource takes no parameters, create a simple POST handler
   if (
-    typeof postDef.searchParamsSchema === "undefined" &&
-    typeof postDef.urlParamsSchema === "undefined" &&
-    typeof postDef.headersSchema === "undefined" &&
-    typeof postDef.bodySchema === "undefined"
+    typeof actionConfig.searchParamsSchema === "undefined" &&
+    typeof withUrlParamsSchema.urlParamsSchema === "undefined" &&
+    typeof actionConfig.headersSchema === "undefined" &&
+    typeof actionConfig.bodySchema === "undefined"
   ) {
     return (options?: RequestInit) =>
-      sendPostRequest(url, postDef.dataSchema, {
+      sendRequest(url, "GET", actionConfig.dataSchema, {
         ...options,
         headers: {
-          ...apiDef.defaultHeaders,
+          ...apiConfig.defaultHeaders,
           ...options?.headers,
         },
       })
@@ -157,89 +159,52 @@ function createPostInstance<const T extends PostDefinition>(
 
   // Create handler function
   const handler: (
-    params?: Params<T>,
+    params?: Params<T1, T2>,
     options?: RequestInit,
-  ) => Promise<ApiResponse<T>> = (params, options) => {
-    const bodyParams = getParamsBySchema(params, postDef.bodySchema)
-    const bodyType = postDef.bodyType ?? "JSON"
-    const body = createBody(bodyParams, bodyType)
+  ) => Promise<ApiResponse<T1>> = (params, options) => {
+    const withBody = params as unknown as {
+      body: Record<string, unknown> | undefined
+    }
+
     const headers = createActionHeaders(
-      postDef,
-      resDef,
-      apiDef,
+      actionConfig,
+      resourceConfig,
+      apiConfig,
       params,
       options,
     )
 
-    return sendPostRequest(
-      urlWithParams(url, postDef, params),
-      postDef.dataSchema,
+    return sendRequest(
+      urlWithParams(
+        url,
+        actionConfig,
+        resourceConfig,
+        params,
+      ),
+      "GET",
+      actionConfig.dataSchema,
       {
         ...options,
         headers,
-        body,
+        body: createBody(withBody.body),
       },
     )
   }
 
-  return handler as ActionInstance<T>
+  return handler as ApiClientAction<T1, T2>
 }
 
-/* == REQUEST HANDLERS == */
-
-/**
- * Get request handler function
- *
- * @param url
- * @param dataSchema
- * @param options
- * @returns
- */
-async function sendGetRequest<const T extends GetDefinition>(
-  url: FullURL,
-  dataSchema?: T["dataSchema"],
-  options?: RequestInit,
-): Promise<ApiResponse<T>> {
-  return await sendRequest(url, dataSchema, {
-    ...options,
-    method: "GET",
-  })
-}
-
-/**
- * Post request handler function
- *
- * @param url
- * @param dataSchema
- * @param options
- * @returns
- */
-async function sendPostRequest<const T extends PostDefinition>(
-  url: FullURL,
-  dataSchema?: T["dataSchema"],
-  options?: RequestInit,
-): Promise<ApiResponse<T>> {
-  return await sendRequest(url, dataSchema, {
-    ...options,
-    method: "POST",
-  })
-}
-
-/**
- * Base request handler function
- *
- * @param url
- * @param dataSchema
- * @param options
- * @returns
- */
-async function sendRequest<const T extends ActionDefinition>(
+async function sendRequest<const T extends ApiActionConfig>(
   url: string,
+  method: "GET" | "POST",
   dataSchema?: T["dataSchema"],
   options?: RequestInit,
 ): Promise<ApiResponse<T>> {
   try {
-    const res = await fetch(url, options)
+    const res = await fetch(url, {
+      ...options,
+      method,
+    })
 
     if (!res.ok) {
       // Log HTTP error
@@ -286,29 +251,29 @@ async function sendRequest<const T extends ActionDefinition>(
 
 /* == UTILITY FUNCTIONS == */
 
-/**
- * Extend url with url parameters and search parameters
- *
- * @param url
- * @param params
- * @param actionDef
- * @returns
- */
-function urlWithParams<const T extends ActionDefinition>(
-  url: FullURL,
-  actionDef: T,
-  params?: Params<T>,
+function urlWithParams(
+  url: string,
+  actionConfig: ApiActionConfig,
+  resourceConfig: ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+  params?: object,
 ) {
-  const urlParams = getParamsBySchema(params, actionDef.urlParamsSchema)
+  const withUrlParamsSchema = resourceConfig as unknown as WithURLParamsSchema
+  const urlParams = getParamsBySchema(
+    params,
+    withUrlParamsSchema.urlParamsSchema,
+  )
   const urlParamEntries = Object.entries(urlParams)
-  const searchParams = getParamsBySchema(params, actionDef.searchParamsSchema)
+  const searchParams = getParamsBySchema(
+    params,
+    actionConfig.searchParamsSchema,
+  )
   const searchParamEntries = Object.entries(searchParams)
 
   let dynamicUrl = url
 
   // Add url parameters to URL
   for (const [param, value] of urlParamEntries) {
-    dynamicUrl = dynamicUrl.replace(`:${param}`, `${value}`) as FullURL
+    dynamicUrl = dynamicUrl.replace(`:${param}`, `${value}`)
   }
 
   // Add search parameters to URL
@@ -317,55 +282,41 @@ function urlWithParams<const T extends ActionDefinition>(
     for (const [param, value] of searchParamEntries) {
       dynamicUrl += `${param}=${value}&`
     }
-    dynamicUrl = dynamicUrl.substring(0, dynamicUrl.length - 1) as FullURL
+    dynamicUrl = dynamicUrl.substring(0, dynamicUrl.length - 1)
   }
 
   return dynamicUrl
 }
 
-/**
- * Create merged headers for resource action
- *
- * @param params
- * @param actionDef
- * @param resDef
- * @param apiDef
- * @param options
- * @returns
- */
-function createActionHeaders<const T extends ActionDefinition>(
-  actionDef: T,
-  resDef: ResourceDefinition,
-  apiDef: ApiDefinition,
-  params?: Params<T>,
+function createActionHeaders<
+  const T1 extends ApiActionConfig,
+  const T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+>(
+  actionConfig: T1,
+  resourceConfig: T2,
+  apiConfig: ApiConfig,
+  params?: Params<T1, T2>,
   options?: RequestInit,
 ) {
   // Get headers from params
   const paramHeaders: object = getParamsBySchema(
     params,
-    actionDef.headersSchema,
+    actionConfig.headersSchema,
   )
 
   // Merge default headers, param headers and option headers
   return {
-    ...apiDef.defaultHeaders,
-    ...resDef.defaultHeaders,
-    ...actionDef.defaultHeaders,
+    ...apiConfig.defaultHeaders,
+    ...resourceConfig.defaultHeaders,
+    ...actionConfig.defaultHeaders,
     ...paramHeaders,
     ...options?.headers,
   }
 }
 
-/**
- * Extract params by their data schema
- *
- * @param params
- * @param schema
- * @returns
- */
 function getParamsBySchema(
-  params?: Params<ActionDefinition>,
-  schema?: ZodObject<any>,
+  params?: object,
+  schema?: ParamsSchema,
 ) {
   const keys = Object.keys(schema?.shape ?? {})
   const entries = Object.entries(params ?? {}).filter(([key]) =>
@@ -374,7 +325,14 @@ function getParamsBySchema(
   return Object.fromEntries(entries)
 }
 
-function createBody(bodyParams: Record<string, unknown>, bodyType: BodyType) {
+function createBody(
+  bodyParams?: Record<string, unknown>,
+  bodyType: BodyType = "JSON",
+) {
+  if (!bodyParams) {
+    return undefined
+  }
+
   if (bodyType === "JSON") {
     return JSON.stringify(bodyParams)
   }

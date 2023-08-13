@@ -5,7 +5,7 @@ import {
   type ZodNumber,
   type ZodObject,
   type ZodOptional,
-  type ZodRawShape,
+  ZodRawShape,
   type ZodString,
   type ZodType,
 } from "zod"
@@ -13,15 +13,33 @@ import {
 // Config types
 export type ApiConfig = {
   baseUrl: string
-  resources: Record<string, ApiResourceConfig>
+  resources: Record<
+    string,
+    ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>
+  >
   defaultHeaders?: Record<string, string>
 }
 
-export type ApiResourceConfig = {
-  path: Path
-  actions: ApiActionsConfig
-  defaultHeaders?: Record<string, string>
-}
+export type PathlessApiResourceConfig<T extends Path> =
+  & {
+    actions: ApiActionsConfig
+    defaultHeaders?: Record<string, string>
+  }
+  & (
+    URLParams<T> extends never ? object
+      : {
+        urlParamsSchema: RequiredParamsSchema<URLParams<T>>
+      }
+  )
+
+export type ApiResourceConfig<
+  T1 extends Path,
+  T2 extends PathlessApiResourceConfig<T1>,
+> =
+  & T2
+  & {
+    path: T1
+  }
 
 export type ApiActionsConfig = {
   get?: ApiGetActionConfig
@@ -29,17 +47,19 @@ export type ApiActionsConfig = {
 }
 
 export type ApiActionConfig = {
-  urlParamsSchema?: RequiredParamsSchema
   searchParamsSchema?: ParamsSchema
   headersSchema?: ParamsSchema
-  dataSchema?: ZodObject<ZodRawShape>
+  dataSchema?: ZodType
+  dataType?: DataType
   defaultHeaders?: Record<string, string>
 }
 
-export type ApiGetActionConfig = ApiActionConfig
+export type ApiGetActionConfig = ApiActionConfig & {
+  dataSchema: ZodType
+}
 
 export type ApiPostActionConfig = ApiActionConfig & {
-  bodySchema?: ZodType
+  bodySchema?: ZodObject<ZodRawShape>
   bodyType?: BodyType
 }
 
@@ -48,23 +68,29 @@ export type ApiClient<T extends ApiConfig> = {
   [K in keyof T["resources"]]: ApiClientResource<T["resources"][K]>
 }
 
-export type ApiClientResource<T extends ApiResourceConfig> = ApiClientActions<
-  T["actions"]
->
+export type ApiClientResource<
+  T extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+> = ApiClientActions<T["actions"], T>
 
-export type ApiClientActions<T extends ApiActionsConfig> = {
-  [K in KeysOfThatDontExtend<T, undefined>]: T[K] extends ApiActionConfig
-    ? ApiClientAction<T[K]>
+export type ApiClientActions<
+  T1 extends ApiActionsConfig,
+  T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+> = {
+  [K in KeysOfThatDontExtend<T1, undefined>]: T1[K] extends ApiActionConfig
+    ? ApiClientAction<T1[K], T2>
     : never
 }
 
-export type ApiClientAction<T extends ApiActionConfig> = CheckParamsIsOptional<
-  Params<T>
-> extends true
-  ? (params?: Params<T>, options?: RequestInit) => Promise<ApiResponse<T>>
-  : Params<T> extends undefined
-    ? (options?: RequestInit) => Promise<ApiResponse<T>>
-  : (params: Params<T>, options?: RequestInit) => Promise<ApiResponse<T>>
+export type ApiClientAction<
+  T1 extends ApiActionConfig,
+  T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+> = Params<T1, T2> extends never
+  ? (options?: RequestInit) => Promise<ApiResponse<T1>>
+  : IsParamsOptional<Params<T1, T2>> extends true ? (
+      params?: Params<T1, T2>,
+      options?: RequestInit,
+    ) => Promise<ApiResponse<T1>>
+  : (params: Params<T1, T2>, options?: RequestInit) => Promise<ApiResponse<T1>>
 
 // Utility types
 export type ParamProperty = ZodString | ZodNumber | ZodBoolean
@@ -86,35 +112,58 @@ export type RequiredParamsSchema<T extends string = string> = ZodObject<
 
 export type Path = `/${string}`
 
+export type URLParams<T extends string> = T extends
+  `${infer PartA}/${infer PartB}` ? IsURLParam<PartA> | URLParams<PartB>
+  : IsURLParam<T>
+
+export type IsURLParam<T extends string> = T extends `:${infer Str}` ? Str
+  : never
+
+export type DataType = "JSON" | "Text"
+
 export type BodyType = "JSON" | "URLSearchParams"
 
-export type CheckParamsIsOptional<T extends Params<ApiActionConfig>> =
-  FilterRequiredParams<T> extends Record<string, never> ? true : false
+export type IsParamsOptional<T> = FilterRequiredParams<T> extends
+  Record<string, never> ? true : false
 
-export type FilterRequiredParams<T extends Params<ApiActionConfig>> = {
+export type FilterRequiredParams<T> = {
   [K in KeysOfThatNeverExtend<T, undefined>]: T[K]
 }
 
-export type Params<T extends ApiActionConfig> = CombinedParams<T> extends
-  Record<
-    string,
-    never
-  > ? never
-  : CombinedParams<T>
+export type IsEmptyObject<T> = [keyof T] extends [never] ? true : false
 
-export type CombinedParams<T extends ApiActionConfig> =
-  & (T["headersSchema"] extends ParamsSchema ? TypeOf<T["headersSchema"]>
-    : Record<string, never>)
-  & (T["urlParamsSchema"] extends RequiredParamsSchema
-    ? TypeOf<T["urlParamsSchema"]>
-    : Record<string, never>)
-  & (T["searchParamsSchema"] extends ParamsSchema
-    ? TypeOf<T["searchParamsSchema"]>
-    : Record<string, never>)
-  & (T extends ApiPostActionConfig
-    ? T["bodySchema"] extends ZodType ? TypeOf<T["bodySchema"]>
-    : Record<string, never>
-    : Record<string, never>)
+export type WithURLParamsSchema = {
+  urlParamsSchema: RequiredParamsSchema
+}
+
+export type Params<
+  T1 extends ApiActionConfig,
+  T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+> = IsEmptyObject<CombinedParams<T1, T2>> extends true ? never
+  : CombinedParams<T1, T2>
+
+export type CombinedParams<
+  T1 extends ApiActionConfig,
+  T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+> = T1 extends ApiPostActionConfig ? (
+    T1["bodySchema"] extends ZodType ? { body: TypeOf<T1["bodySchema"]> }
+      :
+        & object
+        & URLAndSearchParams<T1, T2>
+  )
+  : URLAndSearchParams<T1, T2>
+
+export type URLAndSearchParams<
+  T1 extends ApiActionConfig,
+  T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+> =
+  & (T1["headersSchema"] extends ParamsSchema ? TypeOf<T1["headersSchema"]>
+    : object)
+  & (T2 extends WithURLParamsSchema ? TypeOf<T2["urlParamsSchema"]>
+    : object)
+  & (T1["searchParamsSchema"] extends ParamsSchema
+    ? TypeOf<T1["searchParamsSchema"]>
+    : object)
 
 export type KeysOfThatExtend<T1, T2> = keyof {
   [K in keyof T1 as T1[K] extends T2 ? K : never]: unknown
