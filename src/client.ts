@@ -1,10 +1,10 @@
-import { StatusCode } from "./status_codes.ts"
+import { StatusCode } from "./utils/status_codes.ts"
 import type {
   ApiActionConfig,
   ApiClient,
   ApiClientAction,
   ApiClientActions,
-  ApiConfig,
+  ApiClientConfig,
   ApiGetActionConfig,
   ApiPostActionConfig,
   ApiResourceConfig,
@@ -19,7 +19,7 @@ import type {
 
 /* == API CREATION FUNCTIONS == */
 
-export function zodApiClient<const T extends ApiConfig>(
+export function zodApiClient<const T extends ApiClientConfig>(
   config: T,
 ): ApiClient<T> {
   const apiClient = Object.fromEntries(
@@ -50,7 +50,7 @@ function createApiClientActions<
   const T extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
 >(
   resourceConfig: T,
-  apiConfig: ApiConfig,
+  apiConfig: ApiClientConfig,
 ): ApiClientActions<T["actions"], T> {
   const actions = Object.fromEntries(
     Object.entries(resourceConfig.actions)
@@ -82,7 +82,7 @@ function createClientGetAction<
 >(
   actionConfig: T1,
   resourceConfig: T2,
-  apiConfig: ApiConfig,
+  apiConfig: ApiClientConfig,
 ): ApiClientAction<T1, T2> {
   // Collect resource objects/options
   const url = apiConfig.baseUrl + resourceConfig.path
@@ -136,7 +136,7 @@ function createClientPostAction<
 >(
   actionConfig: T1,
   resourceConfig: T2,
-  apiConfig: ApiConfig,
+  apiConfig: ApiClientConfig,
 ): ApiClientAction<T1, T2> {
   // Collect resource objects/options
   const url = apiConfig.baseUrl + resourceConfig.path
@@ -201,7 +201,7 @@ async function sendRequest<const T extends ApiActionConfig>(
   url: string,
   method: "GET" | "POST",
   actionConfig: T,
-  apiConfig: ApiConfig,
+  apiConfig: ApiClientConfig,
   options?: RequestInit,
 ): Promise<ApiResponse<T>> {
   try {
@@ -339,7 +339,7 @@ function createActionHeaders<
 >(
   actionConfig: T1,
   resourceConfig: T2,
-  apiConfig: ApiConfig,
+  apiConfig: ApiClientConfig,
   params?: Params<T1, T2>,
   options?: RequestInit,
 ) {

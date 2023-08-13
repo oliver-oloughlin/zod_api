@@ -1,6 +1,8 @@
 import type {
   TypeOf,
+  ZodBigInt,
   ZodBoolean,
+  ZodDate,
   ZodEnum,
   ZodNullable,
   ZodNumber,
@@ -19,7 +21,6 @@ export type ApiConfig = {
     ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>
   >
   defaultHeaders?: Record<string, string>
-  logger?: Logger
 }
 
 export type PathlessApiResourceConfig<T extends Path> =
@@ -66,6 +67,10 @@ export type ApiPostActionConfig = ApiActionConfig & {
 }
 
 // Client types
+export type ApiClientConfig = ApiConfig & {
+  logger?: Logger
+}
+
 export type ApiClient<T extends ApiConfig> = {
   [K in keyof T["resources"]]: ApiClientResource<T["resources"][K]>
 }
@@ -138,6 +143,8 @@ export type ParamProperty =
   | ZodString
   | ZodNumber
   | ZodBoolean
+  | ZodBigInt
+  | ZodDate
   | ZodEnum<[string, ...string[]]>
 
 export type ParamsSchema<T extends string = string> = ZodObject<
