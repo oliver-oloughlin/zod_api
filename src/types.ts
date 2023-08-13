@@ -121,7 +121,8 @@ export type URLParams<T extends string> = T extends
   `${infer PartA}/${infer PartB}` ? IsURLParam<PartA> | URLParams<PartB>
   : IsURLParam<T>
 
-export type IsURLParam<T extends string> = T extends `:${infer Str}` ? Str
+export type IsURLParam<T extends string> = T extends `:${infer Param}` ? Param
+  : T extends `[${infer Param}]` ? Param
   : never
 
 export type DataType = "JSON" | "Text"
@@ -162,12 +163,11 @@ export type URLAndSearchParams<
   T1 extends ApiActionConfig,
   T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
 > =
-  & (T1["headersSchema"] extends ParamsSchema ? TypeOf<T1["headersSchema"]>
+  & (T1["headersSchema"] extends ZodType ? TypeOf<T1["headersSchema"]>
     : object)
   & (T2 extends WithURLParamsSchema ? TypeOf<T2["urlParamsSchema"]>
     : object)
-  & (T1["searchParamsSchema"] extends ParamsSchema
-    ? TypeOf<T1["searchParamsSchema"]>
+  & (T1["searchParamsSchema"] extends ZodType ? TypeOf<T1["searchParamsSchema"]>
     : object)
 
 export type KeysOfThatExtend<T1, T2> = keyof {
