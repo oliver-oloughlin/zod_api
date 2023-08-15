@@ -1,6 +1,6 @@
 # zod_api
 
-Configure API clients using Zod schemas for type-safety and interpreted resource
+Configure API clients using Zod schemas for type enforcement and interpreted
 action methods.
 
 ## Api Client
@@ -22,7 +22,7 @@ const apiClient = zodApiClient({
       },
     }),
     baz: zodApiResource("/baz/:id", {
-      // URL parameters schema is enforced from the given path
+      // URL parameters schema is enforced by the given path, /baz/[id] pattern is also supported
       urlParamsSchema: z.object({
         id: z.number(),
       }),
