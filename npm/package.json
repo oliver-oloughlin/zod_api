@@ -2,6 +2,7 @@
   "module": "./esm/mod.js",
   "main": "./script/mod.js",
   "name": "zod_api",
+  "version": "0.1.3",
   "description": "Configure API clients using Zod schemas for type-safety and interpreted resource action methods.",
   "license": "MIT",
   "repository": {
