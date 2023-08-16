@@ -45,8 +45,8 @@ export type ApiResourceConfig<
   }
 
 export type ApiActionsConfig = {
-  get?: ApiGetActionConfig
-  post?: ApiPostActionConfig
+  get?: ApiBodylessActionConfig
+  post?: ApiBodyfullActionConfig
 }
 
 export type ApiActionConfig = {
@@ -57,11 +57,11 @@ export type ApiActionConfig = {
   defaultHeaders?: Record<string, string>
 }
 
-export type ApiGetActionConfig = ApiActionConfig & {
+export type ApiBodylessActionConfig = ApiActionConfig & {
   dataSchema: ZodType
 }
 
-export type ApiPostActionConfig = ApiActionConfig & {
+export type ApiBodyfullActionConfig = ApiActionConfig & {
   bodySchema?: ZodObject<ZodRawShape>
   bodyType?: BodyType
 }
@@ -91,25 +91,52 @@ export type ApiClientActions<
 export type ApiClientAction<
   T1 extends ApiActionConfig,
   T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-> = Params<T1, T2> extends never
-  ? (options?: RequestInit) => Promise<ApiResponse<T1>>
-  : IsParamsOptional<Params<T1, T2>> extends true ? (
-      params?: Params<T1, T2>,
-      options?: RequestInit,
-    ) => Promise<ApiResponse<T1>>
-  : (
-    params: Params<T1, T2>,
-    options?: RequestInit,
-  ) => Promise<ApiResponse<T1>>
+> = IsOptionalObject<ApiClientActionParams<T1, T2>> extends true
+  ? (params?: ApiClientActionParams<T1, T2>) => Promise<ApiResponse<T1>>
+  : (params: ApiClientActionParams<T1, T2>) => Promise<ApiResponse<T1>>
+
+export type ApiClientActionParams<
+  T1 extends ApiActionConfig,
+  T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+> =
+  & { requestParams?: RequestParams }
+  & (
+    T2 extends WithURLParamsSchema
+      ? ParseParams<T2, "urlParamsSchema", "urlParams">
+      : object
+  )
+  & ParseParams<T1, "headersSchema", "headers">
+  & ParseParams<T1, "searchParamsSchema", "searchParams">
+  & (
+    T1 extends ApiBodyfullActionConfig
+      ? ParseParams<T1, "bodySchema", "body", false>
+      : object
+  )
+
+export type PossibleApiClientAction = (
+  params?: PossibleApiClientActionParams,
+) => Promise<ApiResponse<ApiActionConfig>>
+
+export type PossibleApiClientActionParams = ApiClientActionParams<
+  Required<ApiBodyfullActionConfig>,
+  Required<ApiResourceConfig<"/:param", PathlessApiResourceConfig<"/:param">>>
+>
+
+export type ApiClientActionMethod =
+  | ApiClientBodylessActionMethod
+  | ApiClientBodyfullActionMethod
+
+export type ApiClientBodylessActionMethod = "GET" | "HEAD"
+
+export type ApiClientBodyfullActionMethod =
+  | "POST"
+  | "PUT"
+  | "PATCH"
+  | "DELETE"
+  | "OPTIONS"
 
 // Utility types
 export type LogLevel = "none" | "error" | "debug"
-
-export type Params<
-  T1 extends ApiActionConfig,
-  T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-> = IsEmptyObject<CombinedParams<T1, T2>> extends true ? never
-  : CombinedParams<T1, T2>
 
 export type ParamProperty =
   | ZodString
@@ -137,18 +164,30 @@ export type RequiredParamsSchema<T extends string = string> = ZodObject<
 export type Path = `/${string}`
 
 export type URLParams<T extends string> = T extends
-  `${infer PartA}/${infer PartB}` ? IsURLParam<PartA> | URLParams<PartB>
-  : IsURLParam<T>
+  `${infer PartA}/${infer PartB}` ? ParseURLParam<PartA> | URLParams<PartB>
+  : ParseURLParam<T>
 
-export type IsURLParam<T extends string> = T extends `:${infer Param}` ? Param
+export type ParseURLParam<T extends string> = T extends `:${infer Param}`
+  ? Param
   : T extends `[${infer Param}]` ? Param
   : never
+
+export type HasURLParam<T extends string> = HasMembersExtending<
+  T extends `${infer PartA}/${infer PartB}`
+    ? IsURLParam<PartA> | HasURLParam<PartB>
+    : IsURLParam<T>,
+  true
+>
+
+export type IsURLParam<T> = T extends `:${string}` ? true
+  : T extends `[${string}]` ? true
+  : false
 
 export type DataType = "JSON" | "Text"
 
 export type BodyType = "JSON" | "URLSearchParams"
 
-export type IsParamsOptional<T> = FilterRequiredParams<T> extends
+export type IsOptionalObject<T> = FilterRequiredParams<T> extends
   Record<string, never> ? true : false
 
 export type FilterRequiredParams<T> = {
@@ -161,27 +200,24 @@ export type WithURLParamsSchema = {
   urlParamsSchema: RequiredParamsSchema
 }
 
-export type CombinedParams<
-  T1 extends ApiActionConfig,
-  T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-> = T1 extends ApiPostActionConfig ? (
-    T1["bodySchema"] extends ZodType ? { body: TypeOf<T1["bodySchema"]> }
-      :
-        & object
-        & URLAndSearchParams<T1, T2>
+export type ParseParams<
+  T,
+  P extends keyof T,
+  K extends string,
+  AllowOptional = true,
+> = T[P] extends ZodType ? (
+    IsEmptyObject<T[P]> extends false ? (
+        IsOptionalObject<TypeOf<T[P]>> extends true ? (
+            AllowOptional extends true ? { [key in K]?: TypeOf<T[P]> }
+              : { [key in K]: TypeOf<T[P]> }
+          )
+          : { [key in K]: TypeOf<T[P]> }
+      )
+      : object
   )
-  : URLAndSearchParams<T1, T2>
+  : object
 
-export type URLAndSearchParams<
-  T1 extends ApiActionConfig,
-  T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-> =
-  & (T1["headersSchema"] extends ZodType ? TypeOf<T1["headersSchema"]>
-    : object)
-  & (T2 extends WithURLParamsSchema ? TypeOf<T2["urlParamsSchema"]>
-    : object)
-  & (T1["searchParamsSchema"] extends ZodType ? TypeOf<T1["searchParamsSchema"]>
-    : object)
+export type RequestParams = Omit<RequestInit, "body" | "headers" | "method">
 
 export type KeysOfThatExtend<T1, T2> = keyof {
   [K in keyof T1 as T1[K] extends T2 ? K : never]: unknown

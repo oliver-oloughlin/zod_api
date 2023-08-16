@@ -1,20 +1,22 @@
 import { StatusCode } from "./utils/status_codes.ts"
 import type {
   ApiActionConfig,
+  ApiBodyfullActionConfig,
+  ApiBodylessActionConfig,
   ApiClient,
   ApiClientAction,
+  ApiClientActionMethod,
   ApiClientActions,
+  ApiClientBodyfullActionMethod,
+  ApiClientBodylessActionMethod,
   ApiClientConfig,
-  ApiGetActionConfig,
-  ApiPostActionConfig,
   ApiResourceConfig,
   ApiResponse,
   BodyType,
-  Params,
-  ParamsSchema,
   Path,
   PathlessApiResourceConfig,
-  WithURLParamsSchema,
+  PossibleApiClientAction,
+  PossibleApiClientActionParams,
 } from "./types.ts"
 
 /* == API CREATION FUNCTIONS == */
@@ -57,14 +59,16 @@ function createApiClientActions<
       .map(([key, actionConfig]) => [
         key,
         key === "get"
-          ? createClientGetAction(
-            actionConfig as ApiGetActionConfig,
+          ? createClientBodylessAction(
+            "GET",
+            actionConfig as ApiBodylessActionConfig,
             resourceConfig,
             apiConfig,
           )
           : key === "post"
-          ? createClientPostAction(
-            actionConfig as ApiPostActionConfig,
+          ? createClientBodyfullAction(
+            "POST",
+            actionConfig as ApiBodyfullActionConfig,
             resourceConfig,
             apiConfig,
           )
@@ -76,120 +80,71 @@ function createApiClientActions<
   return actions as ApiClientActions<T["actions"], T>
 }
 
-function createClientGetAction<
-  const T1 extends ApiGetActionConfig,
+function createClientBodylessAction<
+  const T1 extends ApiBodylessActionConfig,
   const T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
 >(
+  method: ApiClientBodylessActionMethod,
   actionConfig: T1,
   resourceConfig: T2,
   apiConfig: ApiClientConfig,
 ): ApiClientAction<T1, T2> {
-  // Collect resource objects/options
+  // Create complete url
   const url = apiConfig.baseUrl + resourceConfig.path
-  const withUrlParamsSchema = resourceConfig as unknown as WithURLParamsSchema
-
-  // If resource takes no parameters, create a simple GET handler
-  if (
-    typeof actionConfig.searchParamsSchema === "undefined" &&
-    typeof withUrlParamsSchema.urlParamsSchema === "undefined" &&
-    typeof actionConfig.headersSchema === "undefined"
-  ) {
-    return (options?: RequestInit) =>
-      sendRequest(url, "GET", actionConfig, apiConfig, {
-        ...options,
-        headers: {
-          ...apiConfig.defaultHeaders,
-          ...options?.headers,
-        },
-      })
-  }
 
   // Create handler function
-  const handler: (
-    params?: Params<T1, T2>,
-    options?: RequestInit,
-  ) => Promise<ApiResponse<T1>> = (params, options) => {
+  const handler: PossibleApiClientAction = (params) => {
     return sendRequest(
-      urlWithParams(url, actionConfig, resourceConfig, params),
-      "GET",
+      urlWithParams(url, params),
+      method,
       actionConfig,
       apiConfig,
       {
-        ...options,
+        ...params?.requestParams,
         headers: createActionHeaders(
           actionConfig,
           resourceConfig,
           apiConfig,
           params,
-          options,
         ),
       },
     )
   }
 
+  // Return handler function as typed api client action
   return handler as ApiClientAction<T1, T2>
 }
 
-function createClientPostAction<
-  const T1 extends ApiPostActionConfig,
+function createClientBodyfullAction<
+  const T1 extends ApiBodyfullActionConfig,
   const T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
 >(
+  method: ApiClientBodyfullActionMethod,
   actionConfig: T1,
   resourceConfig: T2,
   apiConfig: ApiClientConfig,
 ): ApiClientAction<T1, T2> {
   // Collect resource objects/options
   const url = apiConfig.baseUrl + resourceConfig.path
-  const withUrlParamsSchema = resourceConfig as unknown as WithURLParamsSchema
-
-  // If resource takes no parameters, create a simple POST handler
-  if (
-    typeof actionConfig.searchParamsSchema === "undefined" &&
-    typeof withUrlParamsSchema.urlParamsSchema === "undefined" &&
-    typeof actionConfig.headersSchema === "undefined" &&
-    typeof actionConfig.bodySchema === "undefined"
-  ) {
-    return (options?: RequestInit) =>
-      sendRequest(url, "POST", actionConfig, apiConfig, {
-        ...options,
-        headers: {
-          ...apiConfig.defaultHeaders,
-          ...options?.headers,
-        },
-      })
-  }
 
   // Create handler function
-  const handler: (
-    params?: Params<T1, T2>,
-    options?: RequestInit,
-  ) => Promise<ApiResponse<T1>> = (params, options) => {
-    const withBody = params as unknown as {
-      body: Record<string, unknown> | undefined
-    }
-
+  const handler: PossibleApiClientAction = (params) => {
     const headers = createActionHeaders(
       actionConfig,
       resourceConfig,
       apiConfig,
       params,
-      options,
     )
 
     return sendRequest(
-      urlWithParams(
-        url,
-        actionConfig,
-        resourceConfig,
-        params,
-      ),
-      "POST",
+      urlWithParams(url, params),
+      method,
       actionConfig,
       apiConfig,
       {
-        ...options,
+        ...params?.requestParams,
         headers,
-        body: createBody(withBody.body),
+        body: createBody(params?.body),
       },
     )
   }
@@ -199,10 +154,10 @@ function createClientPostAction<
 
 async function sendRequest<const T extends ApiActionConfig>(
   url: string,
-  method: "GET" | "POST",
+  method: ApiClientActionMethod,
   actionConfig: T,
   apiConfig: ApiClientConfig,
-  options?: RequestInit,
+  init?: RequestInit,
 ): Promise<ApiResponse<T>> {
   try {
     // Log fetch event
@@ -210,7 +165,7 @@ async function sendRequest<const T extends ApiActionConfig>(
 
     // Send request using fetch
     const res = await fetch(url, {
-      ...options,
+      ...init,
       method,
     })
 
@@ -298,76 +253,55 @@ async function sendRequest<const T extends ApiActionConfig>(
 
 function urlWithParams(
   url: string,
-  actionConfig: ApiActionConfig,
-  resourceConfig: ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-  params?: object,
+  params?: PossibleApiClientActionParams,
 ) {
-  const withUrlParamsSchema = resourceConfig as unknown as WithURLParamsSchema
-  const urlParams = getParamsBySchema(
-    params,
-    withUrlParamsSchema.urlParamsSchema,
-  )
-  const urlParamEntries = Object.entries(urlParams)
-  const searchParams = getParamsBySchema(
-    params,
-    actionConfig.searchParamsSchema,
-  )
-  const searchParamEntries = Object.entries(searchParams)
+  // Get param entries
+  const urlParamEntries = Object.entries(params?.urlParams ?? {})
+  const searchParamEntries = Object.entries(params?.searchParams ?? {})
 
-  let dynamicUrl = url
+  // Create mutable url
+  let mutableUrl = url
 
   // Add url parameters to URL
   for (const [param, value] of urlParamEntries) {
-    dynamicUrl = dynamicUrl.replace(`:${param}`, `${value}`)
+    mutableUrl = mutableUrl.replace(`:${param}`, `${value}`)
   }
 
   // Add search parameters to URL
   if (searchParamEntries.length > 0) {
-    dynamicUrl += "?"
+    mutableUrl += "?"
     for (const [param, value] of searchParamEntries) {
-      dynamicUrl += `${param}=${value}&`
+      mutableUrl += `${param}=${value}&`
     }
-    dynamicUrl = dynamicUrl.substring(0, dynamicUrl.length - 1)
+    mutableUrl = mutableUrl.substring(0, mutableUrl.length - 1)
   }
 
-  return dynamicUrl
+  // Return modified url
+  return mutableUrl
 }
 
-function createActionHeaders<
-  const T1 extends ApiActionConfig,
-  const T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
->(
-  actionConfig: T1,
-  resourceConfig: T2,
+function createActionHeaders(
+  actionConfig: ApiActionConfig,
+  resourceConfig: ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
   apiConfig: ApiClientConfig,
-  params?: Params<T1, T2>,
-  options?: RequestInit,
-) {
-  // Get headers from params
-  const paramHeaders: object = getParamsBySchema(
-    params,
-    actionConfig.headersSchema,
-  )
+  params?: PossibleApiClientActionParams,
+): Headers {
+  // Stringify param headers
+  const paramHeaderEntries = Object.entries(params?.headers ?? {})
 
-  // Merge default headers, param headers and option headers
+  const stringifiedParamHeaderEntries = paramHeaderEntries.map((
+    [key, value],
+  ) => [key, `${value}`])
+
+  const paramHeaders = Object.fromEntries(stringifiedParamHeaderEntries)
+
+  // Merge default headers and param headers in increasing priority
   return {
     ...apiConfig.defaultHeaders,
     ...resourceConfig.defaultHeaders,
     ...actionConfig.defaultHeaders,
     ...paramHeaders,
-    ...options?.headers,
   }
-}
-
-function getParamsBySchema(
-  params?: object,
-  schema?: ParamsSchema,
-) {
-  const keys = Object.keys(schema?.shape ?? {})
-  const entries = Object.entries(params ?? {}).filter(([key]) =>
-    keys.includes(key)
-  )
-  return Object.fromEntries(entries)
 }
 
 function createBody(
