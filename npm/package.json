@@ -1,9 +1,9 @@
 {
   "module": "./esm/mod.js",
   "main": "./script/mod.js",
-  "name": "zod_api",
+  "name": "@oliver_nexro/zod_api",
   "version": "0.2.0",
-  "description": "Configure API clients using Zod schemas for type-safety and interpreted resource action methods.",
+  "description": "Configure API clients using Zod schemas for type-safety and interpreted action methods.",
   "license": "MIT",
   "repository": {
     "type": "git",

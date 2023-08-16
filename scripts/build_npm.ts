@@ -14,10 +14,10 @@ await build({
   },
   package: {
     // package.json properties
-    name: "zod_api",
+    name: "@oliver_nexro/zod_api",
     version: Deno.args[0],
     description:
-      "Configure API clients using Zod schemas for type-safety and interpreted resource action methods.",
+      "Configure API clients using Zod schemas for type-safety and interpreted action methods.",
     license: "MIT",
     repository: {
       type: "git",
