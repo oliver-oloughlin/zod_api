@@ -1,16 +1,16 @@
-import type {
-  TypeOf,
-  ZodBigInt,
-  ZodBoolean,
-  ZodDate,
-  ZodEnum,
-  ZodNullable,
-  ZodNumber,
-  ZodObject,
-  ZodOptional,
-  ZodRawShape,
-  ZodString,
-  ZodType,
+import {
+  type TypeOf,
+  type ZodBigInt,
+  type ZodBoolean,
+  type ZodDate,
+  type ZodEnum,
+  type ZodNullable,
+  type ZodNumber,
+  type ZodObject,
+  type ZodOptional,
+  type ZodRawShape,
+  type ZodString,
+  type ZodType,
 } from "zod"
 
 // Config types
@@ -49,7 +49,9 @@ export type ApiActionsConfig = {
   post?: ApiBodyfullActionConfig
 }
 
-export type ApiActionConfig = {
+export type ApiActionConfig = ApiBodylessActionConfig | ApiBodyfullActionConfig
+
+export type ApiBodylessActionConfig = {
   searchParamsSchema?: ParamsSchema
   headersSchema?: ParamsSchema
   dataSchema?: ZodType
@@ -57,11 +59,12 @@ export type ApiActionConfig = {
   defaultHeaders?: Record<string, string>
 }
 
-export type ApiBodylessActionConfig = ApiActionConfig & {
-  dataSchema: ZodType
-}
-
-export type ApiBodyfullActionConfig = ApiActionConfig & {
+export type ApiBodyfullActionConfig = {
+  searchParamsSchema?: ParamsSchema
+  headersSchema?: ParamsSchema
+  dataSchema?: ZodType
+  dataType?: DataType
+  defaultHeaders?: Record<string, string>
   bodySchema?: ZodObject<ZodRawShape>
   bodyType?: BodyType
 }
