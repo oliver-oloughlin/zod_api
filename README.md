@@ -21,23 +21,23 @@ const apiClient = zodApiClient({
         },
       },
     }),
-    baz: zodApiResource("/baz/:id", {
+    bar: zodApiResource("/bar/:id", {
       // URL parameters schema is enforced by the given path, /baz/[id] pattern is also supported
       urlParamsSchema: z.object({
         id: z.number(),
       }),
       actions: {
-        get: {
+        post: {
           searchParamsSchema: z.object({
             q: z.string().optional(),
+          }),
+          bodySchema: z.object({
+            field1: z.string(),
+            field2: z.number(),
           }),
           headersSchema: z.object({
             "x-key": z.string(),
             "x-secret": z.string(),
-          }),
-          dataSchema: z.object({
-            foo: z.string(),
-            bar: z.number(),
           }),
         },
       },
