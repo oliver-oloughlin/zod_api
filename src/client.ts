@@ -144,7 +144,7 @@ function createClientBodyfullAction<
       {
         ...params?.requestParams,
         headers,
-        body: createBody(params?.body),
+        body: createBody(params?.body, actionConfig.bodyType),
       },
     )
   }
