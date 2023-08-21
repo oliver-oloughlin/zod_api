@@ -1,13 +1,17 @@
 {
   "lock": false,
   "tasks": {
-    "prep": "deno lint && deno fmt",
+    "prep": "deno lint && deno fmt && deno task test",
     "build:npm": "deno run -A ./scripts/build_npm.ts",
     "publish:npm": "npm publish ./npm --access=public",
     "test": "echo No tests!"
   },
   "fmt": {
-    "semiColons": false
+    "semiColons": false,
+    "exclude": ["./npm"]
+  },
+  "lint": {
+    "exclude": ["./npm"]
   },
   "imports": {
     "zod": "https://deno.land/x/zod@v3.21.4/mod.ts",
