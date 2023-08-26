@@ -71,38 +71,47 @@ export type ApiBodyfullActionConfig = {
 
 // Client types
 export type ApiClientConfig = ApiConfig & {
+  fetcher?: Fetcher
   logger?: Logger
 }
 
-export type ApiClient<T extends ApiConfig> = {
-  [K in keyof T["resources"]]: ApiClientResource<T["resources"][K]>
+export type ApiClient<T extends ApiClientConfig> = {
+  [K in keyof T["resources"]]: ApiClientResource<T["resources"][K], T>
 }
 
 export type ApiClientResource<
-  T extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-> = ApiClientActions<T["actions"], T>
+  T1 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+  T2 extends ApiClientConfig,
+> = ApiClientActions<T1["actions"], T1, T2>
 
 export type ApiClientActions<
   T1 extends ApiActionsConfig,
   T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+  T3 extends ApiClientConfig,
 > = {
   [K in KeysOfThatDontExtend<T1, undefined>]: T1[K] extends ApiActionConfig
-    ? ApiClientAction<T1[K], T2>
+    ? ApiClientAction<T1[K], T2, T3>
     : never
 }
 
 export type ApiClientAction<
   T1 extends ApiActionConfig,
   T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-> = IsOptionalObject<ApiClientActionParams<T1, T2>> extends true
-  ? (params?: ApiClientActionParams<T1, T2>) => Promise<ApiResponse<T1>>
-  : (params: ApiClientActionParams<T1, T2>) => Promise<ApiResponse<T1>>
+  T3 extends ApiClientConfig,
+> = IsOptionalObject<ApiClientActionParams<T1, T2, T3>> extends true
+  ? (params?: ApiClientActionParams<T1, T2, T3>) => Promise<ApiResponse<T1>>
+  : (params: ApiClientActionParams<T1, T2, T3>) => Promise<ApiResponse<T1>>
 
 export type ApiClientActionParams<
   T1 extends ApiActionConfig,
   T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+  T3 extends ApiClientConfig,
 > =
-  & { requestParams?: RequestParams }
+  & {
+    requestParams?: RequestParams<
+      T3["fetcher"] extends Fetcher ? T3["fetcher"] : Fetcher
+    >
+  }
   & (
     T2 extends WithURLParamsSchema
       ? ParseParams<T2, "urlParamsSchema", "urlParams">
@@ -122,7 +131,8 @@ export type PossibleApiClientAction = (
 
 export type PossibleApiClientActionParams = ApiClientActionParams<
   Required<ApiBodyfullActionConfig>,
-  Required<ApiResourceConfig<"/:param", PathlessApiResourceConfig<"/:param">>>
+  Required<ApiResourceConfig<"/:param", PathlessApiResourceConfig<"/:param">>>,
+  ApiClientConfig
 >
 
 export type ApiClientActionMethod =
@@ -220,7 +230,10 @@ export type ParseParams<
   )
   : object
 
-export type RequestParams = Omit<RequestInit, "body" | "headers" | "method">
+export type RequestParams<T extends Fetcher> = Omit<
+  Required<Parameters<T>>["1"],
+  "body" | "method" | "headers"
+>
 
 export type KeysOfThatExtend<T1, T2> = keyof {
   [K in keyof T1 as T1[K] extends T2 ? K : never]: unknown
@@ -263,3 +276,5 @@ export type Logger = {
 }
 
 export type LogFunction = (text: string) => void
+
+export type Fetcher = typeof fetch

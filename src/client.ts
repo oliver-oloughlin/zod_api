@@ -49,11 +49,12 @@ export function zodApiResource<
 }
 
 function createApiClientActions<
-  const T extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+  const T1 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+  const T2 extends ApiClientConfig,
 >(
-  resourceConfig: T,
-  apiConfig: ApiClientConfig,
-): ApiClientActions<T["actions"], T> {
+  resourceConfig: T1,
+  apiConfig: T2,
+): ApiClientActions<T1["actions"], T1, T2> {
   const actions = Object.fromEntries(
     Object.entries(resourceConfig.actions)
       .map(([key, actionConfig]) => [
@@ -77,18 +78,19 @@ function createApiClientActions<
       .filter(([_, action]) => !!action),
   )
 
-  return actions as ApiClientActions<T["actions"], T>
+  return actions as ApiClientActions<T1["actions"], T1, T2>
 }
 
 function createClientBodylessAction<
   const T1 extends ApiBodylessActionConfig,
   const T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+  const T3 extends ApiClientConfig,
 >(
   method: ApiClientBodylessActionMethod,
   actionConfig: T1,
   resourceConfig: T2,
-  apiConfig: ApiClientConfig,
-): ApiClientAction<T1, T2> {
+  apiConfig: T3,
+): ApiClientAction<T1, T2, T3> {
   // Create complete url
   const url = apiConfig.baseUrl + resourceConfig.path
 
@@ -112,18 +114,19 @@ function createClientBodylessAction<
   }
 
   // Return handler function as typed api client action
-  return handler as ApiClientAction<T1, T2>
+  return handler as ApiClientAction<T1, T2, T3>
 }
 
 function createClientBodyfullAction<
   const T1 extends ApiBodyfullActionConfig,
   const T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
+  const T3 extends ApiClientConfig,
 >(
   method: ApiClientBodyfullActionMethod,
   actionConfig: T1,
   resourceConfig: T2,
-  apiConfig: ApiClientConfig,
-): ApiClientAction<T1, T2> {
+  apiConfig: T3,
+): ApiClientAction<T1, T2, T3> {
   // Collect resource objects/options
   const url = apiConfig.baseUrl + resourceConfig.path
 
@@ -149,7 +152,7 @@ function createClientBodyfullAction<
     )
   }
 
-  return handler as ApiClientAction<T1, T2>
+  return handler as ApiClientAction<T1, T2, T3>
 }
 
 async function sendRequest<const T extends ApiActionConfig>(
@@ -163,8 +166,11 @@ async function sendRequest<const T extends ApiActionConfig>(
     // Log fetch event
     apiConfig.logger?.debug(`Fetching: ${url}`)
 
+    // Set fetcher
+    const fetcher = apiConfig.fetcher ?? fetch
+
     // Send request using fetch
-    const res = await fetch(url, {
+    const res = await fetcher(url, {
       ...init,
       method,
     })
