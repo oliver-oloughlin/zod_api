@@ -45,3 +45,26 @@ const apiClient = zodApiClient({
   },
 })
 ```
+
+Action methods are inferred and explorable thorugh auto-complete:
+
+```ts
+const response1 = await apiClient.foo.get()
+
+const resposne2 = await apiClient.bar.post({
+  urlParams: {
+    id: 123,
+  },
+  searchParams: {
+    q: "query",
+  },
+  body: {
+    field1: "some string",
+    field2: 42,
+  },
+  headers: {
+    "x-key": "key",
+    "x-secret": "secret",
+  },
+})
+```
