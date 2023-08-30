@@ -1,16 +1,18 @@
-import {
-  type TypeOf,
-  type ZodBigInt,
-  type ZodBoolean,
-  type ZodDate,
-  type ZodEnum,
-  type ZodNullable,
-  type ZodNumber,
-  type ZodObject,
-  type ZodOptional,
-  type ZodRawShape,
-  type ZodString,
-  type ZodType,
+import type {
+  TypeOf,
+  ZodBigInt,
+  ZodBoolean,
+  ZodDate,
+  ZodEnum,
+  ZodLiteral,
+  ZodNullable,
+  ZodNumber,
+  ZodObject,
+  ZodOptional,
+  ZodRawShape,
+  ZodString,
+  ZodType,
+  ZodUnion,
 } from "zod"
 
 // Config types
@@ -151,13 +153,18 @@ export type ApiClientBodyfullActionMethod =
 // Utility types
 export type LogLevel = "none" | "error" | "debug"
 
-export type ParamProperty =
+export type PrimitiveParamProperty =
   | ZodString
   | ZodNumber
   | ZodBoolean
   | ZodBigInt
   | ZodDate
   | ZodEnum<[string, ...string[]]>
+  | ZodLiteral<number | string | boolean | bigint>
+
+export type ParamProperty =
+  | PrimitiveParamProperty
+  | ZodUnion<[PrimitiveParamProperty, ...PrimitiveParamProperty[]]>
 
 export type ParamsSchema<T extends string = string> = ZodObject<
   {
