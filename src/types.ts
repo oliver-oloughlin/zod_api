@@ -279,9 +279,11 @@ export type ApiResponse<T extends ApiActionConfig> =
 export type Logger = {
   debug: LogFunction
   error: LogFunction
+  trace: LogFunction
+  warn: LogFunction
   info: LogFunction
 }
 
-export type LogFunction = (text: string) => void
+export type LogFunction = (...data: unknown[]) => void
 
 export type Fetcher = typeof fetch
