@@ -22,13 +22,11 @@ export type ApiConfig = {
     string,
     ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>
   >
-  defaultHeaders?: Record<string, string>
 }
 
 export type PathlessApiResourceConfig<T extends Path> =
   & {
     actions: ApiActionsConfig
-    defaultHeaders?: Record<string, string>
   }
   & (
     URLParams<T> extends never ? object
@@ -58,38 +56,33 @@ export type ApiBodylessActionConfig = {
   headersSchema?: ParamsSchema
   dataSchema?: ZodType
   dataType?: DataType
-  defaultHeaders?: Record<string, string>
 }
 
-export type ApiBodyfullActionConfig = {
-  searchParamsSchema?: ParamsSchema
-  headersSchema?: ParamsSchema
-  dataSchema?: ZodType
-  dataType?: DataType
-  defaultHeaders?: Record<string, string>
+export type ApiBodyfullActionConfig = ApiBodylessActionConfig & {
   bodySchema?: ZodObject<ZodRawShape>
   bodyType?: BodyType
 }
 
 // Client types
-export type ApiClientConfig = ApiConfig & {
-  fetcher?: Fetcher
+export type ApiClientConfig<T extends Fetcher> = ApiConfig & {
+  fetcher?: T
   logger?: Logger
+  defaultRequestParams?: DefaultRequestParams<T>
 }
 
-export type ApiClient<T extends ApiClientConfig> = {
+export type ApiClient<T extends ApiClientConfig<Fetcher>> = {
   [K in keyof T["resources"]]: ApiClientResource<T["resources"][K], T>
 }
 
 export type ApiClientResource<
   T1 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-  T2 extends ApiClientConfig,
+  T2 extends ApiClientConfig<Fetcher>,
 > = ApiClientActions<T1["actions"], T1, T2>
 
 export type ApiClientActions<
   T1 extends ApiActionsConfig,
   T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-  T3 extends ApiClientConfig,
+  T3 extends ApiClientConfig<Fetcher>,
 > = {
   [K in KeysOfThatDontExtend<T1, undefined>]: T1[K] extends ApiActionConfig
     ? ApiClientAction<T1[K], T2, T3>
@@ -99,7 +92,7 @@ export type ApiClientActions<
 export type ApiClientAction<
   T1 extends ApiActionConfig,
   T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-  T3 extends ApiClientConfig,
+  T3 extends ApiClientConfig<Fetcher>,
 > = IsOptionalObject<ApiClientActionParams<T1, T2, T3>> extends true
   ? (params?: ApiClientActionParams<T1, T2, T3>) => Promise<ApiResponse<T1>>
   : (params: ApiClientActionParams<T1, T2, T3>) => Promise<ApiResponse<T1>>
@@ -107,7 +100,7 @@ export type ApiClientAction<
 export type ApiClientActionParams<
   T1 extends ApiActionConfig,
   T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-  T3 extends ApiClientConfig,
+  T3 extends ApiClientConfig<Fetcher>,
 > =
   & {
     requestParams?: RequestParams<
@@ -134,7 +127,7 @@ export type PossibleApiClientAction = (
 export type PossibleApiClientActionParams = ApiClientActionParams<
   Required<ApiBodyfullActionConfig>,
   Required<ApiResourceConfig<"/:param", PathlessApiResourceConfig<"/:param">>>,
-  ApiClientConfig
+  ApiClientConfig<Fetcher>
 >
 
 export type ApiClientActionMethod =
@@ -236,6 +229,11 @@ export type ParseParams<
       : object
   )
   : object
+
+export type DefaultRequestParams<T extends Fetcher> = Omit<
+  Required<Parameters<T>>["1"],
+  "method"
+>
 
 export type RequestParams<T extends Fetcher> = Omit<
   Required<Parameters<T>>["1"],
