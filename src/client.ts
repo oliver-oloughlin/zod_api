@@ -13,6 +13,7 @@ import type {
   ApiResourceConfig,
   ApiResponse,
   BodyType,
+  Fetcher,
   Path,
   PathlessApiResourceConfig,
   PossibleApiClientAction,
@@ -21,9 +22,12 @@ import type {
 
 /* == API CREATION FUNCTIONS == */
 
-export function zodApiClient<const T extends ApiClientConfig>(
-  config: T,
-): ApiClient<T> {
+export function zodApiClient<
+  const T1 extends Fetcher,
+  const T2 extends ApiClientConfig<T1>,
+>(
+  config: T2,
+): ApiClient<T2> {
   const apiClient = Object.fromEntries(
     Object.entries(config.resources).map(([key, resourceConfig]) => [
       key,
@@ -31,7 +35,7 @@ export function zodApiClient<const T extends ApiClientConfig>(
     ]),
   )
 
-  return apiClient as ApiClient<T>
+  return apiClient as ApiClient<T2>
 }
 
 export function zodApiResource<
@@ -50,7 +54,7 @@ export function zodApiResource<
 
 function createApiClientActions<
   const T1 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-  const T2 extends ApiClientConfig,
+  const T2 extends ApiClientConfig<Fetcher>,
 >(
   resourceConfig: T1,
   apiConfig: T2,
@@ -84,7 +88,7 @@ function createApiClientActions<
 function createClientBodylessAction<
   const T1 extends ApiBodylessActionConfig,
   const T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-  const T3 extends ApiClientConfig,
+  const T3 extends ApiClientConfig<Fetcher>,
 >(
   method: ApiClientBodylessActionMethod,
   actionConfig: T1,
@@ -101,15 +105,7 @@ function createClientBodylessAction<
       method,
       actionConfig,
       apiConfig,
-      {
-        ...params?.requestParams,
-        headers: createActionHeaders(
-          actionConfig,
-          resourceConfig,
-          apiConfig,
-          params,
-        ),
-      },
+      createRequestParams(apiConfig, params),
     )
   }
 
@@ -120,7 +116,7 @@ function createClientBodylessAction<
 function createClientBodyfullAction<
   const T1 extends ApiBodyfullActionConfig,
   const T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-  const T3 extends ApiClientConfig,
+  const T3 extends ApiClientConfig<Fetcher>,
 >(
   method: ApiClientBodyfullActionMethod,
   actionConfig: T1,
@@ -132,21 +128,13 @@ function createClientBodyfullAction<
 
   // Create handler function
   const handler: PossibleApiClientAction = (params) => {
-    const headers = createActionHeaders(
-      actionConfig,
-      resourceConfig,
-      apiConfig,
-      params,
-    )
-
     return sendRequest(
       urlWithParams(url, params),
       method,
       actionConfig,
       apiConfig,
       {
-        ...params?.requestParams,
-        headers,
+        ...createRequestParams(apiConfig, params),
         body: createBody(params?.body, actionConfig.bodyType),
       },
     )
@@ -159,7 +147,7 @@ async function sendRequest<const T extends ApiActionConfig>(
   url: string,
   method: ApiClientActionMethod,
   actionConfig: T,
-  apiConfig: ApiClientConfig,
+  apiConfig: ApiClientConfig<Fetcher>,
   init?: RequestInit,
 ): Promise<ApiResponse<T>> {
   try {
@@ -286,12 +274,10 @@ function urlWithParams(
   return mutableUrl
 }
 
-function createActionHeaders(
-  actionConfig: ApiActionConfig,
-  resourceConfig: ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-  apiConfig: ApiClientConfig,
+function createRequestParams(
+  apiConfig: ApiClientConfig<Fetcher>,
   params?: PossibleApiClientActionParams,
-): Headers {
+): RequestInit {
   // Stringify param headers
   const paramHeaderEntries = Object.entries(params?.headers ?? {})
 
@@ -301,12 +287,14 @@ function createActionHeaders(
 
   const paramHeaders = Object.fromEntries(stringifiedParamHeaderEntries)
 
-  // Merge default headers and param headers in increasing priority
+  // Merge in increasing priority
   return {
-    ...apiConfig.defaultHeaders,
-    ...resourceConfig.defaultHeaders,
-    ...actionConfig.defaultHeaders,
-    ...paramHeaders,
+    ...apiConfig.defaultRequestParams,
+    ...params?.requestParams,
+    headers: {
+      ...apiConfig.defaultRequestParams?.headers,
+      ...paramHeaders,
+    },
   }
 }
 
