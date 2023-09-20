@@ -1,10 +1,9 @@
 {
   "lock": false,
   "tasks": {
-    "prep": "deno lint && deno fmt && deno task test",
+    "test": "deno lint && deno fmt && deno test -A --unstable",
     "build:npm": "deno run -A ./scripts/build_npm.ts",
-    "publish:npm": "npm publish ./npm --access=public",
-    "test": "deno test -A --unstable"
+    "publish:npm": "npm publish ./npm --access=public"
   },
   "fmt": {
     "semiColons": false,

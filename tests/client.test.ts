@@ -7,6 +7,9 @@ Deno.test("get", async (t) => {
       urlParams: {
         name: "ditto",
       },
+      headers: {
+        "schema-header": "schema-header",
+      },
     })
 
     assert(res.ok)
