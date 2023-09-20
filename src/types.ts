@@ -183,6 +183,7 @@ export type URLParams<T extends string> = T extends
 export type ParseURLParam<T extends string> = T extends `:${infer Param}`
   ? Param
   : T extends `[${infer Param}]` ? Param
+  : T extends `{${infer Param}}` ? Param
   : never
 
 export type HasURLParam<T extends string> = HasMembersExtending<

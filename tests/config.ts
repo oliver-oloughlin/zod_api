@@ -23,8 +23,16 @@ export const pokemonApiClient = zodApiClient({
             id: z.number(),
             name: z.string(),
           }),
+          headersSchema: z.object({
+            "schema-header": z.string(),
+          }),
         },
       },
     }),
+  },
+  defaultRequestParams: {
+    headers: {
+      "default-header": "default-header",
+    },
   },
 })
