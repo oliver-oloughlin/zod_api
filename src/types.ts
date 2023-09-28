@@ -14,6 +14,7 @@ import type {
   ZodType,
   ZodUnion,
 } from "zod"
+import type { TokenAuth } from "./TokenAuth.ts"
 
 // Config types
 export type ApiConfig = {
@@ -44,10 +45,13 @@ export type ApiResourceConfig<
     path: T1
   }
 
-export type ApiActionsConfig = {
-  get?: ApiBodylessActionConfig
-  post?: ApiBodyfullActionConfig
-}
+export type ApiActionsConfig =
+  & {
+    [K in BodylessApiActionMethod]?: ApiBodylessActionConfig
+  }
+  & {
+    [K in BodyfullApiActionMethod]?: ApiBodyfullActionConfig
+  }
 
 export type ApiActionConfig = ApiBodylessActionConfig | ApiBodyfullActionConfig
 
@@ -67,7 +71,9 @@ export type ApiBodyfullActionConfig = ApiBodylessActionConfig & {
 export type ApiClientConfig<T extends Fetcher> = ApiConfig & {
   fetcher?: T
   logger?: Logger
-  defaultRequestParams?: DefaultRequestParams<T>
+  requestParams?: DefaultRequestParams<T>
+  // deno-lint-ignore no-explicit-any
+  auth?: TokenAuth<any>
 }
 
 export type ApiClient<T extends ApiClientConfig<Fetcher>> = {
@@ -103,7 +109,7 @@ export type ApiClientActionParams<
   T3 extends ApiClientConfig<Fetcher>,
 > =
   & {
-    requestParams?: RequestParams<
+    requestParams?: ApiActionRequestParams<
       T3["fetcher"] extends Fetcher ? T3["fetcher"] : Fetcher
     >
   }
@@ -130,21 +136,39 @@ export type PossibleApiClientActionParams = ApiClientActionParams<
   ApiClientConfig<Fetcher>
 >
 
-export type ApiClientActionMethod =
-  | ApiClientBodylessActionMethod
-  | ApiClientBodyfullActionMethod
-
-export type ApiClientBodylessActionMethod = "GET" | "HEAD"
-
-export type ApiClientBodyfullActionMethod =
-  | "POST"
-  | "PUT"
-  | "PATCH"
-  | "DELETE"
-  | "OPTIONS"
+export type ApiActionMethod =
+  | BodylessApiActionMethod
+  | BodyfullApiActionMethod
 
 // Utility types
-export type LogLevel = "none" | "error" | "debug"
+export type TokenAuthOptions<T1, T2 extends Fetcher> = {
+  /** Complete URL for token endpoint */
+  tokenUrl: string
+
+  /** Client id/key (username) */
+  clientId: string
+
+  /** Client secret (password) */
+  clientSecret: string
+
+  /** Mapper function from token data to token string */
+  mapper: (data: T1) => string
+
+  /** Additional or override request parameters */
+  requestParams?: RequestParams<T2>
+
+  /** Validation function to detect invalid token */
+  tokenValidator?: (data: T1) => boolean
+}
+
+export type BodylessApiActionMethod = "get" | "head"
+
+export type BodyfullApiActionMethod =
+  | "post"
+  | "put"
+  | "patch"
+  | "delete"
+  | "options"
 
 export type PrimitiveParamProperty =
   | ZodString
@@ -231,13 +255,15 @@ export type ParseParams<
   )
   : object
 
+export type RequestParams<T extends Fetcher> = Required<Parameters<T>>["1"]
+
 export type DefaultRequestParams<T extends Fetcher> = Omit<
-  Required<Parameters<T>>["1"],
+  RequestParams<T>,
   "method"
 >
 
-export type RequestParams<T extends Fetcher> = Omit<
-  Required<Parameters<T>>["1"],
+export type ApiActionRequestParams<T extends Fetcher> = Omit<
+  RequestParams<T>,
   "body" | "method" | "headers"
 >
 
