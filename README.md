@@ -68,3 +68,69 @@ const resposne2 = await apiClient.bar.post({
   },
 })
 ```
+
+Setup authentication:
+
+```ts
+import { z } from "zod"
+import { TokenAuth, zodApiClient, zodApiResource } from "./mod.ts"
+
+// Schemas
+const ArtistSchema = z.object({
+  genres: z.array(z.string()),
+  href: z.string(),
+  id: z.string(),
+  name: z.string(),
+  popularity: z.number(),
+  type: z.enum(["artist"]),
+  uri: z.string(),
+})
+
+const AccessTokenSchema = z.object({
+  access_token: z.string(),
+  token_type: z.enum(["Bearer"]),
+  expires_in: z.number(),
+})
+
+// Spotify API Client
+const spotifyApiClient = zodApiClient({
+  baseUrl: "https://api.spotify.com/v1",
+  logger: console,
+  fetcher: fetch,
+
+  // Setup normal header authentication
+  requestParams: {
+    headers: {
+      "x-api-key": "{api_key}",
+      "x-api-secret": "{api_secret}",
+    },
+  },
+
+  // ... Or setup bearer token authentication
+  auth: new TokenAuth(AccessTokenSchema, {
+    tokenUrl: "https://accounts.spotify.com/api/token",
+    clientId: "{client_id}",
+    clientSecret: "{client_secret}",
+    mapper: (token) => token.access_token,
+    requestParams: {
+      body: new URLSearchParams({
+        grant_type: "client_credentials",
+      }),
+    },
+  }),
+
+  // Define resources
+  resources: {
+    artist: zodApiResource("/artists/:id", {
+      urlParamsSchema: z.object({
+        id: z.string(),
+      }),
+      actions: {
+        get: {
+          dataSchema: ArtistSchema,
+        },
+      },
+    }),
+  },
+})
+```

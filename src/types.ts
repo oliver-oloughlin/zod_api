@@ -136,11 +136,31 @@ export type PossibleApiClientActionParams = ApiClientActionParams<
   ApiClientConfig<Fetcher>
 >
 
-export type ApiClientActionMethod =
+export type ApiActionMethod =
   | BodylessApiActionMethod
   | BodyfullApiActionMethod
 
 // Utility types
+export type TokenAuthOptions<T1, T2 extends Fetcher> = {
+  /** Complete URL for token endpoint */
+  tokenUrl: string
+
+  /** Client id/key (username) */
+  clientId: string
+
+  /** Client secret (password) */
+  clientSecret: string
+
+  /** Mapper function from token data to token string */
+  mapper: (data: T1) => string
+
+  /** Additional or override request parameters */
+  requestParams?: RequestParams<T2>
+
+  /** Validation function to detect invalid token */
+  tokenValidator?: (data: T1) => boolean
+}
+
 export type BodylessApiActionMethod = "get" | "head"
 
 export type BodyfullApiActionMethod =

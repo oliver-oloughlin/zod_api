@@ -1,16 +1,7 @@
 import { ZodType } from "zod"
-import type { Fetcher, RequestParams } from "./types.ts"
+import type { Fetcher, RequestParams, TokenAuthOptions } from "./types.ts"
 import { InvalidTokenSchemaError } from "./errors.ts"
 import { RETRYABLE_STATUS_CODES } from "./utils/status_codes.ts"
-
-export type TokenAuthOptions<T1, T2 extends Fetcher> = {
-  tokenUrl: string
-  clientId: string
-  clientSecret: string
-  mapper: (data: T1) => string
-  requestParams?: RequestParams<T2>
-  tokenValidator?: (data: T1) => boolean
-}
 
 export class TokenAuth<T> {
   private schema: ZodType<T>
