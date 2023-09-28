@@ -32,6 +32,8 @@ export function createUrl(
   // Add url parameters to URL
   for (const [param, value] of urlParamEntries) {
     url = url.replace(`:${param}`, `${value}`)
+    url = url.replace(`[${param}]`, `${value}`)
+    url = url.replace(`{${param}}`, `${value}`)
   }
 
   // Add search parameters to URL
