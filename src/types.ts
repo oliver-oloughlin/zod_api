@@ -14,6 +14,7 @@ import type {
   ZodType,
   ZodUnion,
 } from "zod"
+import type { TokenAuth } from "./TokenAuth.ts"
 
 // Config types
 export type ApiConfig = {
@@ -71,29 +72,8 @@ export type ApiClientConfig<T extends Fetcher> = ApiConfig & {
   fetcher?: T
   logger?: Logger
   requestParams?: DefaultRequestParams<T>
-  auth?: {
-    /** Complete api URL for token creation/retrieval */
-    tokenUrl: string
-
-    /** Client id or key (username) */
-    id: string
-
-    /** Client secret (password) */
-    secret: string
-
-    /** Additional or override request parameters */
-    requestParams?: RequestParams<T>
-  }
-}
-
-export type StatefulApiClientConfig<T extends Fetcher> = ApiClientConfig<T> & {
-  state: {
-    token?: string
-  }
-}
-
-export type ApiClientState = {
-  token?: string
+  // deno-lint-ignore no-explicit-any
+  auth?: TokenAuth<any>
 }
 
 export type ApiClient<T extends ApiClientConfig<Fetcher>> = {

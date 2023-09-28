@@ -11,7 +11,7 @@ const fetcher = (input: string | URL | Request, init?: Init) =>
 export const pokemonApiClient = zodApiClient({
   fetcher,
   logger: console,
-  baseUrl: "https://pokeapi.co/api/v2/",
+  baseUrl: "https://pokeapi.co/api/v2",
   resources: {
     pokemon: zodApiResource("/pokemon/:name", {
       urlParamsSchema: z.object({

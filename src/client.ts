@@ -1,4 +1,4 @@
-import { StatusCode } from "./StatusCode.ts"
+import { ZodApiStatusCode } from "./ZodApiStatusCode.ts"
 import type {
   ApiActionConfig,
   ApiBodyfullActionConfig,
@@ -8,18 +8,21 @@ import type {
   ApiClientActionMethod,
   ApiClientActions,
   ApiClientConfig,
-  ApiClientState,
   ApiResourceConfig,
   ApiResponse,
   BodyfullApiActionMethod,
   BodylessApiActionMethod,
-  BodyType,
   Fetcher,
   Path,
   PathlessApiResourceConfig,
   PossibleApiClientAction,
-  PossibleApiClientActionParams,
 } from "./types.ts"
+import {
+  createAuthHeaders,
+  createBody,
+  createRequestParams,
+  urlWithParams,
+} from "./utils/request_params.ts"
 
 /* == API CREATION FUNCTIONS == */
 
@@ -29,13 +32,11 @@ export function zodApiClient<
 >(
   config: T2,
 ): ApiClient<T2> {
-  const state = {}
-
   const resourceEntries = Object
     .entries(config.resources)
     .map(([key, resourceConfig]) => [
       key,
-      createApiClientActions(resourceConfig, config, state),
+      createApiClientActions(resourceConfig, config),
     ])
 
   return Object.fromEntries(resourceEntries) as ApiClient<T2>
@@ -47,7 +48,6 @@ function createApiClientActions<
 >(
   resourceConfig: T1,
   apiConfig: T2,
-  state: ApiClientState,
 ): ApiClientActions<T1["actions"], T1, T2> {
   const actionEntries = Object
     .entries(resourceConfig.actions)
@@ -59,14 +59,12 @@ function createApiClientActions<
           actionConfig as ApiBodylessActionConfig,
           resourceConfig,
           apiConfig,
-          state,
         )
         : createClientBodyfullAction(
           key.toUpperCase() as BodyfullApiActionMethod,
           actionConfig as ApiBodyfullActionConfig,
           resourceConfig,
           apiConfig,
-          state,
         ),
     ])
 
@@ -84,7 +82,6 @@ function createClientBodylessAction<
   actionConfig: T1,
   resourceConfig: T2,
   apiConfig: T3,
-  state: ApiClientState,
 ): ApiClientAction<T1, T2, T3> {
   // Create complete url
   const url = apiConfig.baseUrl + resourceConfig.path
@@ -113,7 +110,6 @@ function createClientBodyfullAction<
   actionConfig: T1,
   resourceConfig: T2,
   apiConfig: T3,
-  state: ApiClientState,
 ): ApiClientAction<T1, T2, T3> {
   // Collect resource objects/options
   const url = apiConfig.baseUrl + resourceConfig.path
@@ -149,9 +145,16 @@ async function sendRequest<const T extends ApiActionConfig>(
     // Set fetcher
     const fetcher = apiConfig.fetcher ?? fetch
 
+    // Create authentication headers
+    const authHeaders = await createAuthHeaders(apiConfig)
+
     // Send request using fetch
     const res = await fetcher(url, {
       ...init,
+      headers: {
+        ...init?.headers,
+        ...authHeaders,
+      },
       method: method.toUpperCase(),
     })
 
@@ -209,7 +212,7 @@ async function sendRequest<const T extends ApiActionConfig>(
       return {
         ok: false,
         data: null,
-        status: StatusCode.DataParseError,
+        status: ZodApiStatusCode.DataParseError,
         statusText: "Data not parsed successfully",
       }
     }
@@ -229,84 +232,8 @@ async function sendRequest<const T extends ApiActionConfig>(
     return {
       ok: false,
       data: null,
-      status: StatusCode.UncaughtClientError,
+      status: ZodApiStatusCode.UncaughtClientError,
       statusText: "Unhandled client-side error",
     }
   }
-}
-
-/* == UTILITY FUNCTIONS == */
-
-function urlWithParams(
-  url: string,
-  params?: PossibleApiClientActionParams,
-) {
-  // Get param entries
-  const urlParamEntries = Object.entries(params?.urlParams ?? {})
-  const searchParamEntries = Object.entries(params?.searchParams ?? {})
-
-  // Create mutable url
-  let mutableUrl = url
-
-  // Add url parameters to URL
-  for (const [param, value] of urlParamEntries) {
-    mutableUrl = mutableUrl.replace(`:${param}`, `${value}`)
-  }
-
-  // Add search parameters to URL
-  if (searchParamEntries.length > 0) {
-    mutableUrl += "?"
-    for (const [param, value] of searchParamEntries) {
-      mutableUrl += `${param}=${value}&`
-    }
-    mutableUrl = mutableUrl.substring(0, mutableUrl.length - 1)
-  }
-
-  // Return modified url
-  return mutableUrl
-}
-
-function createRequestParams(
-  apiConfig: ApiClientConfig<Fetcher>,
-  params?: PossibleApiClientActionParams,
-): RequestInit {
-  // Stringify param headers
-  const paramHeaderEntries = Object.entries(params?.headers ?? {})
-
-  const stringifiedParamHeaderEntries = paramHeaderEntries.map((
-    [key, value],
-  ) => [key, `${value}`])
-
-  const paramHeaders = Object.fromEntries(stringifiedParamHeaderEntries)
-
-  // Merge in increasing priority
-  return {
-    ...apiConfig.requestParams,
-    ...params?.requestParams,
-    headers: {
-      ...apiConfig.requestParams?.headers,
-      ...paramHeaders,
-    },
-  }
-}
-
-function createBody(
-  bodyParams?: Record<string, unknown>,
-  bodyType: BodyType = "JSON",
-) {
-  if (!bodyParams) {
-    return undefined
-  }
-
-  if (bodyType === "JSON") {
-    return JSON.stringify(bodyParams)
-  }
-
-  const urlSearchParams = new URLSearchParams()
-
-  Object.entries(bodyParams).forEach(([key, value]) =>
-    urlSearchParams.append(key, `${value}`)
-  )
-
-  return urlSearchParams
 }
