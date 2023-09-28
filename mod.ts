@@ -1,2 +1,3 @@
-export { zodApiClient, zodApiResource } from "./src/client.ts"
+export { zodApiClient } from "./src/client.ts"
+export { zodApiResource } from "./src/resource.ts"
 export type * from "./src/types.ts"

@@ -1,4 +1,4 @@
-import { StatusCode } from "./utils/status_codes.ts"
+import { StatusCode } from "./StatusCode.ts"
 import type {
   ApiActionConfig,
   ApiBodyfullActionConfig,
@@ -7,11 +7,12 @@ import type {
   ApiClientAction,
   ApiClientActionMethod,
   ApiClientActions,
-  ApiClientBodyfullActionMethod,
-  ApiClientBodylessActionMethod,
   ApiClientConfig,
+  ApiClientState,
   ApiResourceConfig,
   ApiResponse,
+  BodyfullApiActionMethod,
+  BodylessApiActionMethod,
   BodyType,
   Fetcher,
   Path,
@@ -28,28 +29,16 @@ export function zodApiClient<
 >(
   config: T2,
 ): ApiClient<T2> {
-  const apiClient = Object.fromEntries(
-    Object.entries(config.resources).map(([key, resourceConfig]) => [
+  const state = {}
+
+  const resourceEntries = Object
+    .entries(config.resources)
+    .map(([key, resourceConfig]) => [
       key,
-      createApiClientActions(resourceConfig, config),
-    ]),
-  )
+      createApiClientActions(resourceConfig, config, state),
+    ])
 
-  return apiClient as ApiClient<T2>
-}
-
-export function zodApiResource<
-  const T1 extends Path,
-  const T2 extends PathlessApiResourceConfig<T1>,
-  const T3 extends ApiResourceConfig<T1, T2> = ApiResourceConfig<T1, T2>,
->(
-  path: T1,
-  config: T2,
-) {
-  return {
-    path,
-    ...config,
-  } as T3
+  return Object.fromEntries(resourceEntries) as ApiClient<T2>
 }
 
 function createApiClientActions<
@@ -58,29 +47,30 @@ function createApiClientActions<
 >(
   resourceConfig: T1,
   apiConfig: T2,
+  state: ApiClientState,
 ): ApiClientActions<T1["actions"], T1, T2> {
-  const actions = Object.fromEntries(
-    Object.entries(resourceConfig.actions)
-      .map(([key, actionConfig]) => [
-        key,
-        key === "get"
-          ? createClientBodylessAction(
-            "GET",
-            actionConfig as ApiBodylessActionConfig,
-            resourceConfig,
-            apiConfig,
-          )
-          : key === "post"
-          ? createClientBodyfullAction(
-            "POST",
-            actionConfig as ApiBodyfullActionConfig,
-            resourceConfig,
-            apiConfig,
-          )
-          : null,
-      ])
-      .filter(([_, action]) => !!action),
-  )
+  const actionEntries = Object
+    .entries(resourceConfig.actions)
+    .map(([key, actionConfig]) => [
+      key,
+      key === "get" || key === "head"
+        ? createClientBodylessAction(
+          key.toUpperCase() as BodylessApiActionMethod,
+          actionConfig as ApiBodylessActionConfig,
+          resourceConfig,
+          apiConfig,
+          state,
+        )
+        : createClientBodyfullAction(
+          key.toUpperCase() as BodyfullApiActionMethod,
+          actionConfig as ApiBodyfullActionConfig,
+          resourceConfig,
+          apiConfig,
+          state,
+        ),
+    ])
+
+  const actions = Object.fromEntries(actionEntries)
 
   return actions as ApiClientActions<T1["actions"], T1, T2>
 }
@@ -90,10 +80,11 @@ function createClientBodylessAction<
   const T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
   const T3 extends ApiClientConfig<Fetcher>,
 >(
-  method: ApiClientBodylessActionMethod,
+  method: BodylessApiActionMethod,
   actionConfig: T1,
   resourceConfig: T2,
   apiConfig: T3,
+  state: ApiClientState,
 ): ApiClientAction<T1, T2, T3> {
   // Create complete url
   const url = apiConfig.baseUrl + resourceConfig.path
@@ -118,10 +109,11 @@ function createClientBodyfullAction<
   const T2 extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
   const T3 extends ApiClientConfig<Fetcher>,
 >(
-  method: ApiClientBodyfullActionMethod,
+  method: BodyfullApiActionMethod,
   actionConfig: T1,
   resourceConfig: T2,
   apiConfig: T3,
+  state: ApiClientState,
 ): ApiClientAction<T1, T2, T3> {
   // Collect resource objects/options
   const url = apiConfig.baseUrl + resourceConfig.path
@@ -160,7 +152,7 @@ async function sendRequest<const T extends ApiActionConfig>(
     // Send request using fetch
     const res = await fetcher(url, {
       ...init,
-      method,
+      method: method.toUpperCase(),
     })
 
     if (!res.ok) {
@@ -289,10 +281,10 @@ function createRequestParams(
 
   // Merge in increasing priority
   return {
-    ...apiConfig.defaultRequestParams,
+    ...apiConfig.requestParams,
     ...params?.requestParams,
     headers: {
-      ...apiConfig.defaultRequestParams?.headers,
+      ...apiConfig.requestParams?.headers,
       ...paramHeaders,
     },
   }

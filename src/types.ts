@@ -44,10 +44,13 @@ export type ApiResourceConfig<
     path: T1
   }
 
-export type ApiActionsConfig = {
-  get?: ApiBodylessActionConfig
-  post?: ApiBodyfullActionConfig
-}
+export type ApiActionsConfig =
+  & {
+    [K in BodylessApiActionMethod]?: ApiBodylessActionConfig
+  }
+  & {
+    [K in BodyfullApiActionMethod]?: ApiBodyfullActionConfig
+  }
 
 export type ApiActionConfig = ApiBodylessActionConfig | ApiBodyfullActionConfig
 
@@ -67,7 +70,30 @@ export type ApiBodyfullActionConfig = ApiBodylessActionConfig & {
 export type ApiClientConfig<T extends Fetcher> = ApiConfig & {
   fetcher?: T
   logger?: Logger
-  defaultRequestParams?: DefaultRequestParams<T>
+  requestParams?: DefaultRequestParams<T>
+  auth?: {
+    /** Complete api URL for token creation/retrieval */
+    tokenUrl: string
+
+    /** Client id or key (username) */
+    id: string
+
+    /** Client secret (password) */
+    secret: string
+
+    /** Additional or override request parameters */
+    requestParams?: RequestParams<T>
+  }
+}
+
+export type StatefulApiClientConfig<T extends Fetcher> = ApiClientConfig<T> & {
+  state: {
+    token?: string
+  }
+}
+
+export type ApiClientState = {
+  token?: string
 }
 
 export type ApiClient<T extends ApiClientConfig<Fetcher>> = {
@@ -103,7 +129,7 @@ export type ApiClientActionParams<
   T3 extends ApiClientConfig<Fetcher>,
 > =
   & {
-    requestParams?: RequestParams<
+    requestParams?: ApiActionRequestParams<
       T3["fetcher"] extends Fetcher ? T3["fetcher"] : Fetcher
     >
   }
@@ -131,20 +157,18 @@ export type PossibleApiClientActionParams = ApiClientActionParams<
 >
 
 export type ApiClientActionMethod =
-  | ApiClientBodylessActionMethod
-  | ApiClientBodyfullActionMethod
-
-export type ApiClientBodylessActionMethod = "GET" | "HEAD"
-
-export type ApiClientBodyfullActionMethod =
-  | "POST"
-  | "PUT"
-  | "PATCH"
-  | "DELETE"
-  | "OPTIONS"
+  | BodylessApiActionMethod
+  | BodyfullApiActionMethod
 
 // Utility types
-export type LogLevel = "none" | "error" | "debug"
+export type BodylessApiActionMethod = "get" | "head"
+
+export type BodyfullApiActionMethod =
+  | "post"
+  | "put"
+  | "patch"
+  | "delete"
+  | "options"
 
 export type PrimitiveParamProperty =
   | ZodString
@@ -231,13 +255,15 @@ export type ParseParams<
   )
   : object
 
+export type RequestParams<T extends Fetcher> = Required<Parameters<T>>["1"]
+
 export type DefaultRequestParams<T extends Fetcher> = Omit<
-  Required<Parameters<T>>["1"],
+  RequestParams<T>,
   "method"
 >
 
-export type RequestParams<T extends Fetcher> = Omit<
-  Required<Parameters<T>>["1"],
+export type ApiActionRequestParams<T extends Fetcher> = Omit<
+  RequestParams<T>,
   "body" | "method" | "headers"
 >
 
