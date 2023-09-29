@@ -1,4 +1,3 @@
-import { TokenAuth } from "../TokenAuth.ts"
 import type {
   ApiBodyfullActionConfig,
   ApiClientConfig,
@@ -112,33 +111,4 @@ export function createBody(
 
   // Return URLSearchParameters body
   return urlSearchParams
-}
-
-/**
- * Create authentication headers if auth is set
- *
- * @param apiClientConfig
- * @param refresh
- * @returns
- */
-export async function createAuthHeaders(
-  apiClientConfig: ApiClientConfig<Fetcher>,
-  refresh = false,
-): Promise<HeadersInit> {
-  // Get auth option
-  const auth = apiClientConfig.auth
-
-  // Create token bearer headers if TokenAuth is set
-  if (auth instanceof TokenAuth) {
-    const bearer = await auth.createBearer(refresh)
-
-    return bearer
-      ? {
-        Authorization: bearer,
-      }
-      : {}
-  }
-
-  // Return empty headers if no auth is set or matched
-  return {}
 }

@@ -9,12 +9,7 @@ import type {
   PathlessApiResourceConfig,
   PossibleApiClientActionParams,
 } from "../types.ts"
-import {
-  createAuthHeaders,
-  createBody,
-  createRequestParams,
-  createUrl,
-} from "./request_params.ts"
+import { createBody, createRequestParams, createUrl } from "./request_params.ts"
 import {
   AUTHENTICATION_ERROR_STATUS_CODES,
   ZodApiStatusCode,
@@ -159,7 +154,7 @@ async function sendAuthenticatedRequest(
   fetcher: Fetcher,
 ) {
   // Create authentication headers
-  const authHeaders = await createAuthHeaders(apiClientConfig)
+  const authHeaders = await apiClientConfig.auth?.createAuthHeaders()
 
   // Send request with auth headers
   const res = await fetcher(url, {
@@ -172,7 +167,7 @@ async function sendAuthenticatedRequest(
 
   // If response indicates failed authentication, retry with refetch
   if (AUTHENTICATION_ERROR_STATUS_CODES.includes(res.status)) {
-    const authHeaders = await createAuthHeaders(apiClientConfig, true)
+    const authHeaders = await apiClientConfig.auth?.createAuthHeaders(true)
 
     return await fetcher(url, {
       ...init,
