@@ -14,7 +14,6 @@ import type {
   ZodType,
   ZodUnion,
 } from "zod"
-import type { TokenAuth } from "./TokenAuth.ts"
 
 // Config types
 export type ApiConfig = {
@@ -72,8 +71,7 @@ export type ApiClientConfig<T extends Fetcher> = ApiConfig & {
   fetcher?: T
   logger?: Logger
   requestParams?: DefaultRequestParams<T>
-  // deno-lint-ignore no-explicit-any
-  auth?: TokenAuth<any>
+  auth?: Auth
 }
 
 export type ApiClient<T extends ApiClientConfig<Fetcher>> = {
@@ -140,7 +138,14 @@ export type ApiActionMethod =
   | BodylessApiActionMethod
   | BodyfullApiActionMethod
 
-// Utility types
+// Auth types
+export interface Auth {
+  createAuthHeaders: (
+    refresh?: boolean,
+    retries?: number,
+  ) => HeadersInit | Promise<HeadersInit>
+}
+
 export type TokenAuthOptions<T1, T2 extends Fetcher> = {
   /** Complete URL for token endpoint */
   tokenUrl: string
@@ -161,6 +166,7 @@ export type TokenAuthOptions<T1, T2 extends Fetcher> = {
   tokenValidator?: (data: T1) => boolean
 }
 
+// Utility types
 export type BodylessApiActionMethod = "get" | "head"
 
 export type BodyfullApiActionMethod =

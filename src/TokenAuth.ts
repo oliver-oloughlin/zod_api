@@ -1,9 +1,9 @@
 import { ZodType } from "zod"
-import type { Fetcher, RequestParams, TokenAuthOptions } from "./types.ts"
+import type { Auth, Fetcher, RequestParams, TokenAuthOptions } from "./types.ts"
 import { InvalidTokenSchemaError } from "./errors.ts"
 import { RETRYABLE_STATUS_CODES } from "./utils/status_codes.ts"
 
-export class TokenAuth<T> {
+export class TokenAuth<T> implements Auth {
   private schema: ZodType<T>
   private tokenUrl: string
   private basic: string
@@ -21,10 +21,10 @@ export class TokenAuth<T> {
     this.tokenValidator = options.tokenValidator
   }
 
-  async createBearer(refresh = false, retries = 3): Promise<string | null> {
+  async createAuthHeaders(refresh = false, retries = 3): Promise<HeadersInit> {
     // Check for remaining retry attempts
     if (retries < 1) {
-      return null
+      return {}
     }
 
     // Get current token
@@ -44,10 +44,10 @@ export class TokenAuth<T> {
       // Check for failed response
       if (!res.ok) {
         if (RETRYABLE_STATUS_CODES.includes(res.status)) {
-          return await this.createBearer(false, retries - 1)
+          return await this.createAuthHeaders(false, retries - 1)
         }
 
-        return null
+        return {}
       }
 
       // Parse token, throw InvalidTokenSchemaError upon unsuccessful parse
@@ -60,10 +60,14 @@ export class TokenAuth<T> {
 
       // Set new token and return bearer
       this.token = parsed.data
-      return `Bearer ${this.mapper(parsed.data)}`
+      return {
+        Authorization: `Bearer ${this.mapper(parsed.data)}`,
+      }
     }
 
     // Return bearer
-    return `Bearer ${this.mapper(token)}`
+    return {
+      Authorization: `Bearer ${this.mapper(token)}`,
+    }
   }
 }
