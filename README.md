@@ -73,7 +73,13 @@ Setup authentication:
 
 ```ts
 import { z } from "zod"
-import { TokenAuth, zodApiClient, zodApiResource } from "./mod.ts"
+import {
+  ApiKeyAuth,
+  BasicAuth,
+  BearerTokenAuth,
+  zodApiClient,
+  zodApiResource,
+} from "./mod.ts"
 
 // Schemas
 const ArtistSchema = z.object({
@@ -98,16 +104,24 @@ const spotifyApiClient = zodApiClient({
   logger: console,
   fetcher: fetch,
 
-  // Setup normal header authentication
+  // Setup authentication headers directly
   requestParams: {
     headers: {
       "x-api-key": "{api_key}",
-      "x-api-secret": "{api_secret}",
     },
   },
 
-  // ... Or setup bearer token authentication
-  auth: new TokenAuth(AccessTokenSchema, {
+  // API key authentication
+  auth: new ApiKeyAuth({ key: "{api_key}" }),
+
+  // Basic authentication
+  auth: new BasicAuth({
+    id: "{api_id}",
+    secret: "{api_secret}",
+  }),
+
+  // Bearer token authentication
+  auth: new BearerTokenAuth(AccessTokenSchema, {
     tokenUrl: "https://accounts.spotify.com/api/token",
     clientId: "{client_id}",
     clientSecret: "{client_secret}",
