@@ -181,7 +181,7 @@ export type ApiKeyAuthOptions = {
 
   /**
    * App id header name.
-   * @default "x-api-id"
+   * @default "x-app-id"
    */
   idHeader?: string
 }

@@ -14,7 +14,7 @@ export class ApiKeyAuth implements Auth {
   }: ApiKeyAuthOptions) {
     this.key = key
     this.keyHeader = keyHeader ?? "x-api-key"
-    this.idHeader = idHeader ?? "x-api-id"
+    this.idHeader = idHeader ?? "x-app-id"
     this.id = id
   }
 
