@@ -166,35 +166,25 @@ export type BearerTokenAuthOptions<T1, T2 extends Fetcher> = {
   tokenValidator?: (data: T1) => boolean
 }
 
-export type ApiKeyAuthOptions =
-  & {
-    /**
-     * API key header name.
-     * @default "x-api-key"
-     */
-    keyHeader?: string
+export type ApiKeyAuthOptions = {
+  /** API key value. */
+  key: string
 
-    /**
-     * API id header name.
-     * @default "x-api-id"
-     */
-    idHeader?: string
-  }
-  & (
-    {
-      /** API key value. */
-      key: string
+  /** App id value. */
+  id?: string
 
-      /** API id value. */
-      id?: string
-    } | {
-      /** API key value. */
-      key?: string
+  /**
+   * API key header name.
+   * @default "x-api-key"
+   */
+  keyHeader?: string
 
-      /** API id value. */
-      id: string
-    }
-  )
+  /**
+   * App id header name.
+   * @default "x-api-id"
+   */
+  idHeader?: string
+}
 
 export type BasicAuthOptions = {
   /** API id value. */
