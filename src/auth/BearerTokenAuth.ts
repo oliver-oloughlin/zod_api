@@ -1,9 +1,14 @@
 import { ZodType } from "zod"
-import type { Auth, Fetcher, RequestParams, TokenAuthOptions } from "./types.ts"
-import { InvalidTokenSchemaError } from "./errors.ts"
-import { RETRYABLE_STATUS_CODES } from "./utils/status_codes.ts"
+import type {
+  Auth,
+  BearerTokenAuthOptions,
+  Fetcher,
+  RequestParams,
+} from "../types.ts"
+import { InvalidTokenSchemaError } from "../errors.ts"
+import { RETRYABLE_STATUS_CODES } from "../utils/status_codes.ts"
 
-export class TokenAuth<T> implements Auth {
+export class BearerTokenAuth<T> implements Auth {
   private schema: ZodType<T>
   private tokenUrl: string
   private basic: string
@@ -12,7 +17,7 @@ export class TokenAuth<T> implements Auth {
   private tokenValidator?: (data: T) => boolean
   private token?: T
 
-  constructor(schema: ZodType<T>, options: TokenAuthOptions<T, Fetcher>) {
+  constructor(schema: ZodType<T>, options: BearerTokenAuthOptions<T, Fetcher>) {
     this.schema = schema
     this.tokenUrl = options.tokenUrl
     this.basic = `Basic ${btoa(`${options.clientId}:${options.clientSecret}`)}`

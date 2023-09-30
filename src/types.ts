@@ -146,7 +146,7 @@ export interface Auth {
   ) => HeadersInit | Promise<HeadersInit>
 }
 
-export type TokenAuthOptions<T1, T2 extends Fetcher> = {
+export type BearerTokenAuthOptions<T1, T2 extends Fetcher> = {
   /** Complete URL for token endpoint */
   tokenUrl: string
 
@@ -164,6 +164,44 @@ export type TokenAuthOptions<T1, T2 extends Fetcher> = {
 
   /** Validation function to detect invalid token */
   tokenValidator?: (data: T1) => boolean
+}
+
+export type ApiKeyAuthOptions =
+  & {
+    /**
+     * API key header name.
+     * @default "x-api-key"
+     */
+    keyHeader?: string
+
+    /**
+     * API id header name.
+     * @default "x-api-id"
+     */
+    idHeader?: string
+  }
+  & (
+    {
+      /** API key value. */
+      key: string
+
+      /** API id value. */
+      id?: string
+    } | {
+      /** API key value. */
+      key?: string
+
+      /** API id value. */
+      id: string
+    }
+  )
+
+export type BasicAuthOptions = {
+  /** API id value. */
+  id: string
+
+  /** API secret value. */
+  secret: string
 }
 
 // Utility types
