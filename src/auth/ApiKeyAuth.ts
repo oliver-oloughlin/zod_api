@@ -1,7 +1,7 @@
 import type { ApiKeyAuthOptions, Auth } from "../types.ts"
 
 export class ApiKeyAuth implements Auth {
-  private key?: string
+  private key: string
   private keyHeader: string
   private idHeader: string
   private id?: string
@@ -20,7 +20,7 @@ export class ApiKeyAuth implements Auth {
 
   createAuthHeaders() {
     return {
-      ...(this.key ? { [this.keyHeader]: this.key } : {}),
+      [this.keyHeader]: this.key,
       ...(this.id ? { [this.idHeader]: this.id } : {}),
     }
   }
