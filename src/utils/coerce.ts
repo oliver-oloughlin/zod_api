@@ -1,25 +1,32 @@
-import { z, ZodType } from "zod"
+import { z } from "zod"
 
-export function zodCoerce(schema: ZodType) {
-  const type = schema._type
-  const typeOf = typeof schema._type
+export function parseCoercedPrimitive<const T extends z.ZodType>(
+  value: unknown,
+  schema: T,
+): z.SafeParseSuccess<T> | { success: false } {
+  const type = typeof schema._type
 
-  switch (typeOf) {
-    case "number": {
-      return z.coerce.number()
-    }
-    case "bigint": {
-      return z.coerce.bigint()
-    }
-    case "boolean": {
-      return z.coerce.bigint()
-    }
-    case "object": {
-      if (type instanceof Date) {
-        return z.coerce.date()
-      }
+  const coerceSchema = type === "number"
+    ? z.coerce.number()
+    : type === "boolean"
+    ? z.coerce.boolean()
+    : type === "bigint"
+    ? z.coerce.bigint()
+    : type === "string"
+    ? z.coerce.string()
+    : null
+
+  if (!coerceSchema) {
+    return {
+      success: false,
     }
   }
 
-  return schema
+  const coerceParsed = coerceSchema.safeParse(value)
+
+  if (!coerceParsed.success) {
+    return coerceParsed
+  }
+
+  return schema.safeParse(coerceParsed.data)
 }

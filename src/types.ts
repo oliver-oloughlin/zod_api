@@ -153,6 +153,7 @@ export type ApiActionMethod =
 /********************/
 export type ApiServerConfig = ApiConfig & {
   options?: Omit<Deno.ServeOptions, "onError">
+  middleware?: Middleware
 }
 
 export type ApiServerHandlers<T extends ApiServerConfig> = {
@@ -164,11 +165,13 @@ export type ApiServerResourceHandlers<
 > = {
   [K in keyof T["actions"]]: (
     req: Request,
-    ctx: ApiServerHandlerContext<T["actions"][K], T>,
-  ) => ApiServerHandlerResult<T["actions"][K]>
+    ctx: ApiActionHandlerContext<T["actions"][K], T>,
+  ) =>
+    | ApiActionHandlerResult<T["actions"][K]>
+    | Promise<ApiActionHandlerResult<T["actions"][K]>>
 }
 
-export type ApiServerHandlerContext<T1, T2> =
+export type ApiActionHandlerContext<T1, T2> =
   & (T1 extends { bodySchema: ZodType } ? { body: TypeOf<T1["bodySchema"]> }
     : Record<string, never>)
   & (T1 extends { searchParamsSchema: ZodType }
@@ -181,19 +184,34 @@ export type ApiServerHandlerContext<T1, T2> =
     ? { urlParams: TypeOf<T2["urlParamsSchema"]> }
     : Record<string, never>)
 
-export type ApiServerHandlerResult<T> =
+export type ApiActionHandlerResult<T> =
   | (T extends { dataSchema: ZodType } ? {
       ok: true
       data: TypeOf<T["dataSchema"]>
     }
     : {
       ok: true
+      data?: never
     })
   | {
     ok: false
     status: number
-    errorMessage: string
+    message?: string
   }
+
+/********************/
+/*                  */
+/*   ROUTER TYPES   */
+/*                  */
+/********************/
+export type RouteHandler = {
+  pattern: URLPattern
+  handlers: Record<ApiActionMethod, RequestHandler>
+}
+
+export type RequestHandler = (req: Request) => Response | Promise<Response>
+
+export type Middleware = (req: Request) => Response | Promise<Response> | void
 
 /******************/
 /*                */

@@ -4,6 +4,8 @@ export type * from "./src/types.ts"
 // Export ZodApi functions
 export { zodApiClient } from "./src/client.ts"
 export { zodApiResource } from "./src/resource.ts"
+export { zodApiServer } from "./src/server.ts"
+export { zodApiConfig } from "./src/config.ts"
 
 // Export implemented auth strategies
 export { BearerTokenAuth } from "./src/auth/BearerTokenAuth.ts"

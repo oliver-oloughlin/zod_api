@@ -1,10 +1,11 @@
 import { ApiServerConfig, ApiServerHandlers } from "./types.ts"
+import { routeRequest } from "./utils/router.ts"
 
 export function zodApiServer<const T extends ApiServerConfig>(
-  config: T,
-  handlers: ApiServerHandlers<T>,
+  apiServerConfig: T,
+  apiServerHandlers: ApiServerHandlers<T>,
 ) {
-  return Deno.serve(config.options ?? {}, async (req) => {
-    return new Response()
+  return Deno.serve(apiServerConfig.options ?? {}, async (req) => {
+    return await routeRequest(req, apiServerConfig, apiServerHandlers)
   })
 }
