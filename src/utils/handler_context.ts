@@ -5,6 +5,13 @@ import {
   PathlessApiResourceConfig,
 } from "../types.ts"
 
+/**
+ * @param req - Incoming request.
+ * @param urlPatternResult - Resource url pattern result.
+ * @param resourceConfig - Resource configuration.
+ * @param actionConfig - Action configuration.
+ * @returns An action handler context if successful, null if not.
+ */
 export async function createActionHandlerContext(
   req: Request,
   urlPatternResult: URLPatternResult,
@@ -14,19 +21,28 @@ export async function createActionHandlerContext(
   >,
   actionConfig: ApiBodyfullActionConfig,
 ) {
+  // Create URL from request url string
   const url = new URL(req.url)
 
+  // Get body
   let body: unknown = undefined
   try {
     body = await req.json()
   } catch (_) {
-    // Catch error
+    try {
+      const formData = await req.formData()
+      body = Object.fromEntries(formData.entries())
+    } catch (_) {
+      // Body type not supported
+    }
   }
 
+  // Get headers, search parameters and url parameters
   const headers = Object.fromEntries(req.headers.entries())
   const searchParams = Object.fromEntries(url.searchParams.entries())
   const urlParams = urlPatternResult.pathname.groups
 
+  // Parse body, headers, search parameters and url parameters
   const parsedBody = await actionConfig.bodySchema?.safeParseAsync(body)
 
   const parsedHeaders = await actionConfig.headersSchema?.safeParseAsync(
@@ -40,6 +56,7 @@ export async function createActionHandlerContext(
     urlParams,
   )
 
+  // Check for parse errors
   if (
     (parsedBody && !parsedBody.success) ||
     (parsedHeaders && !parsedHeaders.success) ||
@@ -49,6 +66,7 @@ export async function createActionHandlerContext(
     return null
   }
 
+  // Return action handler context
   return {
     body: parsedBody?.data,
     headers: parsedHeaders?.data,

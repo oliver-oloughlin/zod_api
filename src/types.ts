@@ -199,18 +199,6 @@ export type ApiActionHandlerResult<T> =
     message?: string
   }
 
-/********************/
-/*                  */
-/*   ROUTER TYPES   */
-/*                  */
-/********************/
-export type RouteHandler = {
-  pattern: URLPattern
-  handlers: Record<ApiActionMethod, RequestHandler>
-}
-
-export type RequestHandler = (req: Request) => Response | Promise<Response>
-
 export type Middleware = (req: Request) => Response | Promise<Response> | void
 
 /******************/
