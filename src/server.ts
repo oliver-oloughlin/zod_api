@@ -1,7 +1,7 @@
 import { ApiServerConfig, ApiServerHandlers } from "./types.ts"
 import { routeRequest } from "./utils/router.ts"
 
-export function zodApiServer<const T extends ApiServerConfig>(
+export function server<const T extends ApiServerConfig>(
   apiServerConfig: T,
   apiServerHandlers: ApiServerHandlers<T>,
 ) {
