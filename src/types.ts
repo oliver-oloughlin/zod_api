@@ -152,6 +152,7 @@ export type ApiActionMethod =
 /*                  */
 /********************/
 export type ApiServerConfig = ApiConfig & {
+  logger?: Logger
   options?: Omit<Deno.ServeOptions, "onError">
   middleware?: Middleware
 }

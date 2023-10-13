@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { zodApiClient, zodApiResource } from "../mod.ts"
+import { client, resource } from "../mod.ts"
 
 type Init = Required<Parameters<typeof fetch>>["1"] & {
   test?: string
@@ -8,12 +8,12 @@ type Init = Required<Parameters<typeof fetch>>["1"] & {
 const fetcher = (input: string | URL | Request, init?: Init) =>
   fetch(input, init)
 
-export const pokemonApiClient = zodApiClient({
+export const pokemonApiClient = client({
   fetcher,
   logger: console,
   baseUrl: "https://pokeapi.co/api/v2",
   resources: {
-    pokemon: zodApiResource("/pokemon/:name", {
+    pokemon: resource("/pokemon/:name", {
       urlParamsSchema: z.object({
         name: z.string(),
       }),

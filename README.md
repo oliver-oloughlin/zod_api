@@ -173,6 +173,9 @@ server({
       }),
       actions: {
         get: {
+          searchParams: z.object({
+            q: z.number(),
+          }),
           dataSchema: z.object({
             bar: z.string(),
             baz: z.number(),
@@ -183,8 +186,23 @@ server({
   }
 }, {
   foo: {
+    // ctx contains parsed body, headers, url and search parameters.
     get: (req, ctx) => {
+      // Return successful response
+      return {
+        ok: true,
+        data: {
+          bar: ctx.urlParams.id,
+          baz: ctx.searchParams.q,
+        }
+      }
 
+      // or return error
+      return {
+        ok: false,
+        status: 401,
+        message: "Unauthorized"
+      }
     }
   }
 })
