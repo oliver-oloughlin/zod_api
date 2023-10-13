@@ -4,7 +4,7 @@ import type {
   PathlessApiResourceConfig,
 } from "./types.ts"
 
-export function zodApiResource<
+export function resource<
   const T1 extends Path,
   const T2 extends PathlessApiResourceConfig<T1>,
 >(

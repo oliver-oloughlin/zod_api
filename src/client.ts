@@ -13,9 +13,7 @@ import type {
 } from "./types.ts"
 import { sendRequest } from "./utils/request.ts"
 
-/* == API CREATION FUNCTIONS == */
-
-export function zodApiClient<
+export function client<
   const T1 extends Fetcher,
   const T2 extends ApiClientConfig<T1>,
 >(

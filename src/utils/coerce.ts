@@ -1,25 +1,45 @@
-import { z, ZodType } from "zod"
+import { z } from "zod"
 
-export function zodCoerce(schema: ZodType) {
-  const type = schema._type
-  const typeOf = typeof schema._type
+/**
+ * Coerce and parse a Zod schema of any primitive type.
+ *
+ * @param value - Value to be coerced and parsed according to schema.
+ * @param schema - Primitive Zod schema.
+ * @returns A parse result or error.
+ */
+export function parseCoercedPrimitive<const T extends z.ZodType>(
+  value: unknown,
+  schema: T,
+): z.SafeParseSuccess<T> | { success: false } {
+  // Get schema type
+  const type = typeof schema._type
 
-  switch (typeOf) {
-    case "number": {
-      return z.coerce.number()
-    }
-    case "bigint": {
-      return z.coerce.bigint()
-    }
-    case "boolean": {
-      return z.coerce.bigint()
-    }
-    case "object": {
-      if (type instanceof Date) {
-        return z.coerce.date()
-      }
+  // Select appropriate coerce schema
+  const coerceSchema = type === "number"
+    ? z.coerce.number()
+    : type === "boolean"
+    ? z.coerce.boolean()
+    : type === "bigint"
+    ? z.coerce.bigint()
+    : type === "string"
+    ? z.coerce.string()
+    : null
+
+  // If no coerce schema selected, return error
+  if (!coerceSchema) {
+    return {
+      success: false,
     }
   }
 
-  return schema
+  // Parse using coerce schema
+  const coerceParsed = coerceSchema.safeParse(value)
+
+  // Return error if not successful
+  if (!coerceParsed.success) {
+    return coerceParsed
+  }
+
+  // Return parse result of schema on coerced data
+  return schema.safeParse(coerceParsed.data)
 }
