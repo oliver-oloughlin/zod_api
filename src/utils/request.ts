@@ -47,6 +47,9 @@ export async function sendRequest<const T extends ApiActionConfig>(
     // Set fetcher
     const fetcher = apiClientConfig.fetcher ?? fetch
 
+    // Throttle request
+    await apiClientConfig.throttle?.throttle()
+
     // Log fetch event
     apiClientConfig.logger?.debug(`Fetching: ${url}`)
 
@@ -60,7 +63,7 @@ export async function sendRequest<const T extends ApiActionConfig>(
 
     if (!res.ok) {
       // Log HTTP error
-      apiClientConfig.logger?.error(
+      apiClientConfig.logger?.debug(
         `Error fetching: ${url}, Status: ${res.status} ${res.statusText}`,
       )
 
@@ -90,7 +93,7 @@ export async function sendRequest<const T extends ApiActionConfig>(
     apiClientConfig.logger?.debug(`Getting data of type: ${dataType}`)
 
     // Get data from response
-    const json = actionConfig.dataType?.toLowerCase() === "text"
+    const data = actionConfig.dataType?.toLowerCase() === "text"
       ? await res.text()
       : await res.json()
 
@@ -98,12 +101,12 @@ export async function sendRequest<const T extends ApiActionConfig>(
     apiClientConfig.logger?.debug(`Parsing data of type: ${dataType}`)
 
     // Parse data
-    const parsed = await actionConfig.dataSchema.safeParseAsync(json)
+    const parsed = await actionConfig.dataSchema.safeParseAsync(data)
 
     // Handle failed parse
     if (!parsed.success) {
       // Log parse error
-      apiClientConfig.logger?.error(
+      apiClientConfig.logger?.debug(
         `Error when parsing data of type: ${dataType}
         ${JSON.stringify(parsed.error, null, 2)}`,
       )
