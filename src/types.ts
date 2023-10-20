@@ -75,10 +75,22 @@ export type ApiBodyfullActionConfig = ApiBodylessActionConfig & {
 /*                  */
 /********************/
 export type ApiClientConfig<T extends Fetcher> = ApiConfig & {
+  /** Base URL for API */
   baseUrl: string
+
+  /** Fetcher for sending requests - must extend the Fertch API */
   fetcher?: T
+
+  /** Logger object */
   logger?: Logger
+
+  /** Request throttle strategy - Sets a delay between requests */
+  throttle?: Throttle
+
+  /** Default request parameters that are included in each request (can be overridden) */
   requestParams?: DefaultRequestParams<T>
+
+  /** Authentication strategy - Sets authentication headers for each request */
   auth?: Auth
 }
 
@@ -145,6 +157,10 @@ export type PossibleApiClientActionParams = ApiClientActionParams<
 export type ApiActionMethod =
   | BodylessApiActionMethod
   | BodyfullApiActionMethod
+
+export type Throttle = {
+  throttle(): Promise<void>
+}
 
 /********************/
 /*                  */

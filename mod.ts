@@ -14,3 +14,6 @@ export { config } from "./src/config.ts"
 export { BearerTokenAuth } from "./src/auth/BearerTokenAuth.ts"
 export { ApiKeyAuth } from "./src/auth/ApiKeyAuth.ts"
 export { BasicAuth } from "./src/auth/BasicAuth.ts"
+
+// Export implemented throttle strategies
+export { FixedThrottle } from "./src/throttle/FixedThrottle.ts"
