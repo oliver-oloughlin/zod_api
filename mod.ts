@@ -7,7 +7,6 @@ export * from "./src/errors.ts"
 // Export ZodApi functions
 export { client } from "./src/client.ts"
 export { resource } from "./src/resource.ts"
-export { server } from "./src/server.ts"
 export { config } from "./src/config.ts"
 
 // Export implemented auth strategies
