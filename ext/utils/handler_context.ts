@@ -3,7 +3,7 @@ import type {
   ApiResourceConfig,
   PathlessApiResourceConfig,
 } from "../../mod.ts"
-import { parseCoercedPrimitiveAsync } from "../_deps.ts"
+import { safeParseSearchParams } from "../_deps.ts"
 import type { ApiActionHandlerContext } from "../_types.ts"
 
 /**
@@ -49,11 +49,10 @@ export async function createActionHandlerContext(
     headers,
   )
 
-  const parsedSearchParams = await parseCoercedPrimitiveAsync(
-    url,
+  const parsedSearchParams = actionConfig.searchParamsSchema
     // deno-lint-ignore no-explicit-any
-    actionConfig.searchParamsSchema as any,
-  )
+    ? safeParseSearchParams(url, actionConfig!.searchParamsSchema as any)
+    : null
 
   const parsedUrlParams = await resourceConfig.urlParamsSchema?.safeParseAsync(
     urlParams,

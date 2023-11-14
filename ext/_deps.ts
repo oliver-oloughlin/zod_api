@@ -1,4 +1,4 @@
-export { parseCoercedPrimitiveAsync } from "https://deno.land/x/monoutils@v0.1.1/zod.ts"
+export { safeParseSearchParams } from "https://deno.land/x/monoutils@v0.2.0/zod.ts"
 export {
   badRequest,
   internalServerError,

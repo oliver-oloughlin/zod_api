@@ -148,14 +148,15 @@ const spotifyApiClient = client({
 })
 ```
 
-## Server
+## Server (Deno specific)
 
 Create a server with strongly typed endpoints:
 
 ```ts
-import { resource, server } from "zod_api"
+import { resource } from "zod_api"
+import { serve } from "zod_api/ext/serve.ts"
 
-server({
+serve({
   // Set options (optional)
   options: {
     hostname: "localhost",
@@ -208,13 +209,14 @@ server({
 })
 ```
 
-## Client & Server
+## Client & Server (Deno specific)
 
 When you want to configure both the client and the server for maximum
 synchronization, you can do it the following way:
 
 ```ts
-import { client, config, resource, server } from "zod_api"
+import { client, config, resource } from "zod_api"
+import { serve } from "zod_api/ext/serve.ts"
 
 // in config.ts
 const apiConfig = config({
@@ -232,7 +234,7 @@ const apiClient = client({
 })
 
 // in server.ts
-server({
+serve({
   ...apiConfig,
 }, {
   foo: {
