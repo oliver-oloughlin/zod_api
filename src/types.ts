@@ -377,4 +377,7 @@ export type Logger = {
 
 export type LogFunction = (...data: unknown[]) => void
 
-export type Fetcher = typeof fetch
+export type Fetcher = (
+  input: string | URL,
+  init?: RequestInit,
+) => Promise<Response>
