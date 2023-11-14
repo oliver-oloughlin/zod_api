@@ -1,12 +1,14 @@
-import {
-  ApiActionHandlerContext,
+import type {
   ApiActionMethod,
   ApiBodyfullActionConfig,
   ApiResourceConfig,
+  PathlessApiResourceConfig,
+} from "../../mod.ts"
+import type {
+  ApiActionHandlerContext,
   ApiServerConfig,
   ApiServerHandlers,
-  PathlessApiResourceConfig,
-} from "../types.ts"
+} from "../_types.ts"
 import { createActionHandlerContext } from "./handler_context.ts"
 import {
   badRequest,
@@ -14,7 +16,7 @@ import {
   methodNotAllowed,
   notFound,
   ok,
-} from "./response.ts"
+} from "../_deps.ts"
 
 export async function routeRequest(
   req: Request,

@@ -1,9 +1,10 @@
-import {
-  ApiActionHandlerContext,
+import type {
   ApiBodyfullActionConfig,
   ApiResourceConfig,
   PathlessApiResourceConfig,
-} from "../types.ts"
+} from "../../mod.ts"
+import { parseCoercedPrimitiveAsync } from "../_deps.ts"
+import type { ApiActionHandlerContext } from "../_types.ts"
 
 /**
  * @param req - Incoming request.
@@ -39,7 +40,6 @@ export async function createActionHandlerContext(
 
   // Get headers, search parameters and url parameters
   const headers = Object.fromEntries(req.headers.entries())
-  const searchParams = Object.fromEntries(url.searchParams.entries())
   const urlParams = urlPatternResult.pathname.groups
 
   // Parse body, headers, search parameters and url parameters
@@ -49,8 +49,11 @@ export async function createActionHandlerContext(
     headers,
   )
 
-  const parsedSearchParams = await actionConfig.searchParamsSchema
-    ?.safeParseAsync(searchParams)
+  const parsedSearchParams = await parseCoercedPrimitiveAsync(
+    url,
+    // deno-lint-ignore no-explicit-any
+    actionConfig.searchParamsSchema as any,
+  )
 
   const parsedUrlParams = await resourceConfig.urlParamsSchema?.safeParseAsync(
     urlParams,
