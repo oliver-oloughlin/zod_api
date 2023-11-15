@@ -154,7 +154,7 @@ Create a server with strongly typed endpoints:
 
 ```ts
 import { resource } from "zod_api"
-import { serve } from "zod_api/ext/serve.ts"
+import { serve } from "zod_api/ext/serve"
 
 serve({
   // Set options (optional)
@@ -216,7 +216,7 @@ synchronization, you can do it the following way:
 
 ```ts
 import { client, config, resource } from "zod_api"
-import { serve } from "zod_api/ext/serve.ts"
+import { serve } from "zod_api/ext/serve"
 
 // in config.ts
 const apiConfig = config({
