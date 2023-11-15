@@ -1,5 +1,5 @@
 import { Throttle } from "../types.ts"
-import { sleep } from "../utils/sleep.ts"
+import { sleep } from "monoutils/time.ts"
 
 /**
  * A fixed minimum delay between requests.

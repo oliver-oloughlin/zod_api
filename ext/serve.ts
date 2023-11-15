@@ -8,14 +8,14 @@ import type {
   PathlessApiResourceConfig,
 } from "../mod.ts"
 import type { TypeOf, ZodType } from "zod"
-import { safeCoerceObject } from "https://deno.land/x/monoutils@v0.3.0/zod.ts"
+import { safeCoerceObject } from "monoutils/zod.ts"
 import {
   badRequest,
   internalServerError,
   methodNotAllowed,
   notFound,
   ok,
-} from "https://deno.land/x/monoutils@v0.3.0/response.ts"
+} from "monoutils/response.ts"
 
 /*************/
 /*           */
@@ -141,10 +141,6 @@ async function createActionHandlerContext(
 
   // Parse body, headers, search parameters and url parameters
   const parsedBody = await actionConfig.bodySchema?.safeParseAsync(body)
-
-  if (actionConfig.dataSchema) {
-    console.log("HEADERS:", headers)
-  }
 
   const parsedHeaders = actionConfig.headersSchema
     // deno-lint-ignore no-explicit-any
