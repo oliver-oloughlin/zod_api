@@ -8,14 +8,14 @@ import type {
   PathlessApiResourceConfig,
 } from "../mod.ts"
 import type { TypeOf, ZodType } from "zod"
-import { safeCoerceObject } from "monoutils/zod.ts"
+import { safeCoerceObject } from "https://deno.land/x/monoutils@v0.3.1/zod.ts"
 import {
   badRequest,
   internalServerError,
   methodNotAllowed,
   notFound,
   ok,
-} from "monoutils/response.ts"
+} from "https://deno.land/x/monoutils@v0.3.1/response.ts"
 
 /*************/
 /*           */

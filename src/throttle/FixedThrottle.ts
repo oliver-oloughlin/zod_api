@@ -1,5 +1,5 @@
 import { Throttle } from "../types.ts"
-import { sleep } from "monoutils/time.ts"
+import { sleep } from "../utils/sleep.ts"
 
 /**
  * A fixed minimum delay between requests.
@@ -29,7 +29,6 @@ export class FixedThrottle implements Throttle {
 
     // Sleep if time is greater than zero
     if (sleepMs > 0) {
-      console.log("Sleep:", sleepMs)
       this.waiting += 1
       await sleep(sleepMs)
       this.waiting -= 1
