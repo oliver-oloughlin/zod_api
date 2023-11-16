@@ -29,7 +29,6 @@ export class FixedThrottle implements Throttle {
 
     // Sleep if time is greater than zero
     if (sleepMs > 0) {
-      console.log("Sleep:", sleepMs)
       this.waiting += 1
       await sleep(sleepMs)
       this.waiting -= 1
