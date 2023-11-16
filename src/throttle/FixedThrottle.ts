@@ -9,27 +9,30 @@ import { sleep } from "monoutils/time.ts"
 export class FixedThrottle implements Throttle {
   private interval: number
   private previousTimestamp: number
+  private waiting: number
 
   /**
-   * @param interval - Fixed interval, guarantees a minimum delay between requests.
+   * @param interval - Fixed interval in milliseconds, guarantees a minimum delay between requests.
    */
   constructor(interval: number) {
     this.interval = interval
     this.previousTimestamp = 0
+    this.waiting = 0
   }
 
   async throttle() {
     // Calculate current sleep time in milliseconds
     const now = Date.now()
     const diff = now - this.previousTimestamp
-    const sleepMs = this.interval - diff
+    this.previousTimestamp = now
+    const sleepMs = this.interval * (1 + this.waiting) - diff
 
     // Sleep if time is greater than zero
     if (sleepMs > 0) {
+      console.log("Sleep:", sleepMs)
+      this.waiting += 1
       await sleep(sleepMs)
+      this.waiting -= 1
     }
-
-    // Set new previous timestamp
-    this.previousTimestamp = now
   }
 }
