@@ -12,7 +12,10 @@
     "exclude": ["./npm"]
   },
   "lint": {
-    "exclude": ["./npm", "./t.ts"]
+    "exclude": ["./npm", "./t.ts"],
+    "rules": {
+      "exclude": ["no-explicit-any"]
+    }
   },
   "test": {
     "include": ["./tests"]
