@@ -43,7 +43,13 @@ export async function sendRequest<const T extends ApiActionConfig>(
 
     // Create request init
     const url = createUrl(resourceConfig, apiClientConfig, parsedParams)
-    const requestParams = createRequestParams(apiClientConfig, parsedParams)
+
+    const requestParams = createRequestParams(
+      apiClientConfig,
+      actionConfig,
+      parsedParams,
+    )
+
     const body = createBody(actionConfig, parsedParams)
 
     const requestInit = {

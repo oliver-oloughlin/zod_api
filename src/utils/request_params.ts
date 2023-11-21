@@ -114,6 +114,7 @@ export function createUrl(
  */
 export function createRequestParams(
   apiClientConfig: ApiClientConfig<Fetcher>,
+  actionConfig: ApiBodyfullActionConfig,
   params: PossibleApiClientActionParams | undefined,
 ): RequestInit {
   // Create param headers
@@ -125,11 +126,23 @@ export function createRequestParams(
 
   const paramHeaders = Object.fromEntries(stringifiedParamHeaderEntries)
 
+  // Set content type header if request contains body
+  const bodyType = actionConfig?.bodyType ?? "JSON"
+  const contentType = bodyType === "JSON"
+    ? "application/json"
+    : "application/x-www-form-urlencoded"
+  const contentTypeHeaderEntry = actionConfig.bodySchema
+    ? {
+      "Content-Type": contentType,
+    }
+    : undefined
+
   // Merge in increasing priority
   return {
     ...apiClientConfig.requestParams,
     ...params?.requestParams,
     headers: {
+      ...contentTypeHeaderEntry,
       ...apiClientConfig.requestParams?.headers,
       ...paramHeaders,
     },
