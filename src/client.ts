@@ -74,5 +74,6 @@ function createApiClientAction<
     )
   }
 
+  // Return handler function
   return handler as ApiClientAction<T1, T2, T3>
 }
