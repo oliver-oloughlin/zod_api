@@ -3,6 +3,7 @@ import type {
   ZodBigInt,
   ZodBoolean,
   ZodDate,
+  ZodDefault,
   ZodEnum,
   ZodLiteral,
   ZodNullable,
@@ -148,10 +149,14 @@ export type PossibleApiClientAction = (
   params?: PossibleApiClientActionParams,
 ) => Promise<ApiResponse<ApiActionConfig>>
 
-export type PossibleApiClientActionParams = ApiClientActionParams<
-  Required<ApiBodyfullActionConfig>,
-  Required<ApiResourceConfig<"/:param", PathlessApiResourceConfig<"/:param">>>,
-  ApiClientConfig<Fetcher>
+export type PossibleApiClientActionParams = Partial<
+  ApiClientActionParams<
+    Required<ApiBodyfullActionConfig>,
+    Required<
+      ApiResourceConfig<"/:param", PathlessApiResourceConfig<"/:param">>
+    >,
+    ApiClientConfig<Fetcher>
+  >
 >
 
 export type ApiActionMethod =
@@ -227,6 +232,28 @@ export type BasicAuthOptions = {
 /*   UTILITY TYPES   */
 /*                   */
 /*********************/
+export type InferZodParams<T extends ZodType> = T extends
+  ZodDefault<infer Z extends ZodType> ? (
+    (
+      Z extends ZodObject<ZodRawShape> ? InferZodParams<Z>
+        : TypeOf<Z>
+    ) | undefined
+  )
+  : T extends ZodObject<infer U> ? ZodObjectInputModel<U>
+  : TypeOf<T>
+
+export type ZodObjectInputModel<T extends ZodRawShape> =
+  & {
+    [K in KeysOfThatExtend<T, ZodDefault<ZodType>>]?: InferZodParams<
+      T[K]
+    >
+  }
+  & {
+    [K in KeysOfThatDontExtend<T, ZodDefault<ZodType>>]: InferZodParams<
+      T[K]
+    >
+  }
+
 export type BodylessApiActionMethod = "get" | "head"
 
 export type BodyfullApiActionMethod =
@@ -247,7 +274,8 @@ export type PrimitiveParamProperty =
 
 export type ParamProperty =
   | PrimitiveParamProperty
-  | ZodUnion<[PrimitiveParamProperty, ...PrimitiveParamProperty[]]>
+  | ZodUnion<[ParamProperty, ...ParamProperty[]]>
+  | ZodDefault<ParamProperty>
 
 export type ParamsSchema<T extends string = string> = ZodObject<
   {
@@ -311,11 +339,11 @@ export type ParseParams<
   AllowOptional = true,
 > = T[P] extends ZodType ? (
     IsEmptyObject<T[P]> extends false ? (
-        IsOptionalObject<TypeOf<T[P]>> extends true ? (
-            AllowOptional extends true ? { [key in K]?: TypeOf<T[P]> }
-              : { [key in K]: TypeOf<T[P]> }
+        IsOptionalObject<InferZodParams<T[P]>> extends true ? (
+            AllowOptional extends true ? { [key in K]?: InferZodParams<T[P]> }
+              : { [key in K]: InferZodParams<T[P]> }
           )
-          : { [key in K]: TypeOf<T[P]> }
+          : { [key in K]: InferZodParams<T[P]> }
       )
       : object
   )
@@ -364,6 +392,7 @@ export type ApiResponse<T extends ApiActionConfig> =
     | {
       ok: false
       data: null
+      error?: Error
     }
   )
 

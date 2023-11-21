@@ -15,7 +15,7 @@ export const pokemonApiClient = client({
   resources: {
     pokemon: resource("/pokemon/:name", {
       urlParamsSchema: z.object({
-        name: z.string(),
+        name: z.string().default("pikachu"),
       }),
       actions: {
         get: {

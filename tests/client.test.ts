@@ -2,6 +2,17 @@ import { assert } from "./deps.ts"
 import { pokemonApiClient } from "./config.ts"
 
 Deno.test("get", async (t) => {
+  await t.step("Should successfully get pikachu pokemon data", async () => {
+    const res = await pokemonApiClient.pokemon.get({
+      headers: {
+        "schema-header": "schema-header",
+      },
+    })
+
+    assert(res.ok)
+    assert(res.data.name === "pikachu")
+  })
+
   await t.step("Should successfully get ditto pokemon data", async () => {
     const res = await pokemonApiClient.pokemon.get({
       urlParams: {

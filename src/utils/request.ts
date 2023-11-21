@@ -9,7 +9,12 @@ import type {
   PathlessApiResourceConfig,
   PossibleApiClientActionParams,
 } from "../types.ts"
-import { createBody, createRequestParams, createUrl } from "./request_params.ts"
+import {
+  createBody,
+  createRequestParams,
+  createUrl,
+  parseParams,
+} from "./request_params.ts"
 import {
   AUTHENTICATION_ERROR_STATUS_CODES,
   ZodApiStatusCode,
@@ -33,10 +38,13 @@ export async function sendRequest<const T extends ApiActionConfig>(
   params: PossibleApiClientActionParams | undefined,
 ): Promise<ApiResponse<T>> {
   try {
+    // Parse parameters
+    const parsedParams = parseParams(resourceConfig, actionConfig, params)
+
     // Create request init
-    const url = createUrl(resourceConfig, apiClientConfig, params)
-    const requestParams = createRequestParams(apiClientConfig, params)
-    const body = createBody(actionConfig, params)
+    const url = createUrl(resourceConfig, apiClientConfig, parsedParams)
+    const requestParams = createRequestParams(apiClientConfig, parsedParams)
+    const body = createBody(actionConfig, parsedParams)
 
     const requestInit = {
       ...requestParams,
@@ -117,6 +125,7 @@ export async function sendRequest<const T extends ApiActionConfig>(
         data: null,
         status: ZodApiStatusCode.DataParseError,
         statusText: "Data not parsed successfully",
+        error: parsed.error,
       }
     }
 
@@ -137,6 +146,7 @@ export async function sendRequest<const T extends ApiActionConfig>(
       data: null,
       status: ZodApiStatusCode.UncaughtClientError,
       statusText: "Unhandled client-side error",
+      error: e,
     }
   }
 }

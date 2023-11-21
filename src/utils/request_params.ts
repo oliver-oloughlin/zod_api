@@ -8,6 +8,63 @@ import type {
   PossibleApiClientActionParams,
 } from "../types.ts"
 
+export function parseParams(
+  resourceConfig: ApiResourceConfig<any, any>,
+  actionConfig: ApiBodyfullActionConfig,
+  params: PossibleApiClientActionParams | undefined,
+): PossibleApiClientActionParams {
+  // Parse params using config schemas
+  const urlParams = resourceConfig.urlParamsSchema
+    ?.parse(params?.urlParams ?? {})
+
+  const searchParams = actionConfig.searchParamsSchema
+    ?.parse(params?.searchParams ?? {})
+
+  const headers = actionConfig.headersSchema
+    ?.parse(params?.headers ?? {})
+
+  const body = actionConfig.bodySchema
+    ?.parse(params?.body ?? {})
+
+  // Create param entries
+  const urlParamsEntry = urlParams
+    ? {
+      ...params?.urlParams,
+      ...urlParams,
+    }
+    : undefined
+
+  const searchParamsEntry = searchParams
+    ? {
+      ...params?.searchParams,
+      ...searchParams,
+    }
+    : undefined
+
+  const headersEntry = headers
+    ? {
+      ...params?.headers,
+      ...headers,
+    }
+    : undefined
+
+  const bodyEntry = body
+    ? {
+      ...params?.body,
+      ...body,
+    }
+    : undefined
+
+  // Return loose params + parsed params
+  return {
+    ...params,
+    urlParams: urlParamsEntry,
+    searchParams: searchParamsEntry,
+    headers: headersEntry,
+    body: bodyEntry,
+  }
+}
+
 /**
  * Create a URL from base url, path and parameters
  *
@@ -19,7 +76,7 @@ import type {
 export function createUrl(
   resourceConfig: ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
   apiClientConfig: ApiClientConfig<Fetcher>,
-  params?: PossibleApiClientActionParams,
+  params: PossibleApiClientActionParams | undefined,
 ) {
   // Get param entries
   const urlParamEntries = Object.entries(params?.urlParams ?? {})
@@ -57,7 +114,7 @@ export function createUrl(
  */
 export function createRequestParams(
   apiClientConfig: ApiClientConfig<Fetcher>,
-  params?: PossibleApiClientActionParams,
+  params: PossibleApiClientActionParams | undefined,
 ): RequestInit {
   // Create param headers
   const paramHeaderEntries = Object.entries(params?.headers ?? {})
