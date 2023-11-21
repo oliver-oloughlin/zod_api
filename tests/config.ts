@@ -23,6 +23,9 @@ export const pokemonApiClient = client({
             id: z.number(),
             name: z.string(),
           }),
+          searchParamsSchema: z.object({
+            optional: z.string().optional(),
+          }),
           headersSchema: z.object({
             "schema-header": z.string(),
           }),
