@@ -1,4 +1,5 @@
 import type {
+  input,
   TypeOf,
   ZodBigInt,
   ZodBoolean,
@@ -232,27 +233,6 @@ export type BasicAuthOptions = {
 /*   UTILITY TYPES   */
 /*                   */
 /*********************/
-export type InferZodParams<T extends ZodType> = T extends
-  ZodDefault<infer Z extends ZodType> ? (
-    (
-      Z extends ZodObject<ZodRawShape> ? InferZodParams<Z>
-        : TypeOf<Z>
-    ) | undefined
-  )
-  : T extends ZodObject<infer U> ? ZodObjectInputModel<U>
-  : TypeOf<T>
-
-export type ZodObjectInputModel<T extends ZodRawShape> =
-  & {
-    [K in KeysOfThatExtend<T, ZodDefault<ZodType>>]?: InferZodParams<
-      T[K]
-    >
-  }
-  & {
-    [K in KeysOfThatDontExtend<T, ZodDefault<ZodType>>]: InferZodParams<
-      T[K]
-    >
-  }
 
 export type BodylessApiActionMethod = "get" | "head"
 
@@ -339,11 +319,11 @@ export type ParseParams<
   AllowOptional = true,
 > = T[P] extends ZodType ? (
     IsEmptyObject<T[P]> extends false ? (
-        IsOptionalObject<InferZodParams<T[P]>> extends true ? (
-            AllowOptional extends true ? { [key in K]?: InferZodParams<T[P]> }
-              : { [key in K]: InferZodParams<T[P]> }
+        IsOptionalObject<input<T[P]>> extends true ? (
+            AllowOptional extends true ? { [key in K]?: input<T[P]> }
+              : { [key in K]: input<T[P]> }
           )
-          : { [key in K]: InferZodParams<T[P]> }
+          : { [key in K]: input<T[P]> }
       )
       : object
   )
