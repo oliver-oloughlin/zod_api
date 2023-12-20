@@ -108,9 +108,6 @@ export async function sendRequest<const T extends ApiActionConfig>(
       }
     }
 
-    // Get and parse data
-    const dataType = actionConfig.dataType ?? "JSON"
-
     // Get data from response
     const data = actionConfig.dataType?.toLowerCase() === "text"
       ? await res.text()
