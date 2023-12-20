@@ -94,6 +94,13 @@ export type ApiClientConfig<T extends Fetcher> = ApiConfig & {
 
   /** Authentication strategy - Sets authentication headers for each request */
   auth?: Auth
+
+  /**
+   * Number of milliseconds to wait between retry attempts.
+   *
+   * @default [500,1000,3000]
+   */
+  retry?: number[]
 }
 
 export type ApiClient<T extends ApiClientConfig<Fetcher>> = {
