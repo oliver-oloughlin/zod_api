@@ -57,7 +57,7 @@ export async function sendRequest<const T extends ApiActionConfig>(
     const requestInit = {
       ...requestParams,
       body,
-      method: method.toUpperCase(),
+      method,
     }
 
     // Set fetcher
@@ -67,7 +67,7 @@ export async function sendRequest<const T extends ApiActionConfig>(
     await apiClientConfig.throttle?.throttle()
 
     // Log fetch event
-    apiClientConfig.logger?.debug(`Fetching: ${url}`)
+    apiClientConfig.logger?.debug(`[${method}] ${url}`)
 
     // Send request with authentication
     const res = await sendAuthenticatedRequest(
@@ -77,10 +77,16 @@ export async function sendRequest<const T extends ApiActionConfig>(
       fetcher,
     )
 
+    apiClientConfig.logger?.debug(
+      `[${method}] ${res.status}${
+        res.statusText ? ` ${res.statusText} ` : ""
+      }${url}`,
+    )
+
     if (!res.ok) {
       // Log HTTP error
       apiClientConfig.logger?.debug(
-        `Error fetching: ${url}, Status: ${res.status} ${res.statusText}`,
+        `[${method}] error: ${url}, Status: ${res.status} ${res.statusText}`,
       )
 
       // Return error response
@@ -105,16 +111,10 @@ export async function sendRequest<const T extends ApiActionConfig>(
     // Get and parse data
     const dataType = actionConfig.dataType ?? "JSON"
 
-    // Log data get event
-    apiClientConfig.logger?.debug(`Getting data of type: ${dataType}`)
-
     // Get data from response
     const data = actionConfig.dataType?.toLowerCase() === "text"
       ? await res.text()
       : await res.json()
-
-    // Log data parse event
-    apiClientConfig.logger?.debug(`Parsing data of type: ${dataType}`)
 
     // Parse data
     const parsed = await actionConfig.dataSchema.safeParseAsync(data)
@@ -122,10 +122,7 @@ export async function sendRequest<const T extends ApiActionConfig>(
     // Handle failed parse
     if (!parsed.success) {
       // Log parse error
-      apiClientConfig.logger?.debug(
-        `Error when parsing data of type: ${dataType}
-        ${JSON.stringify(parsed.error, null, 2)}`,
-      )
+      apiClientConfig.logger?.error(parsed.error)
 
       // return response with custom error status
       return {
