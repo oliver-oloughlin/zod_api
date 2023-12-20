@@ -15,8 +15,10 @@ import {
   createUrl,
   parseParams,
 } from "./request_params.ts"
+import { sleep } from "./sleep.ts"
 import {
   AUTHENTICATION_ERROR_STATUS_CODES,
+  RETRYABLE_STATUS_CODES,
   ZodApiStatusCode,
 } from "./status_codes.ts"
 
@@ -173,10 +175,11 @@ async function sendAuthenticatedRequest(
   fetcher: Fetcher,
 ) {
   // Create authentication headers
-  const authHeaders = await apiClientConfig.auth?.createAuthHeaders()
+  let authHeaders = await apiClientConfig.auth?.createAuthHeaders()
+  const retries = apiClientConfig.retry ?? [500, 1_000, 3_000]
 
   // Send request with auth headers
-  const res = await fetcher(url, {
+  let res = await fetcher(url, {
     ...init,
     headers: {
       ...init.headers,
@@ -185,16 +188,40 @@ async function sendAuthenticatedRequest(
   })
 
   // If response indicates failed authentication, retry with refetch
-  if (AUTHENTICATION_ERROR_STATUS_CODES.includes(res.status)) {
-    const authHeaders = await apiClientConfig.auth?.createAuthHeaders(true)
+  if (!res.ok && AUTHENTICATION_ERROR_STATUS_CODES.includes(res.status)) {
+    authHeaders = await apiClientConfig.auth?.createAuthHeaders(true)
 
-    return await fetcher(url, {
+    res = await fetcher(url, {
       ...init,
       headers: {
         ...init.headers,
         ...authHeaders,
       },
     })
+  }
+
+  // Return if successful response
+  if (res.ok) {
+    return res
+  }
+
+  for (const timeout of retries) {
+    // Send request with auth headers
+    res = await fetcher(url, {
+      ...init,
+      headers: {
+        ...init.headers,
+        ...authHeaders,
+      },
+    })
+
+    // Return if successful or not retryable
+    if (!res.ok || !RETRYABLE_STATUS_CODES.includes(res.status)) {
+      return res
+    }
+
+    // Wait before retrying
+    await sleep(timeout)
   }
 
   // Return response
