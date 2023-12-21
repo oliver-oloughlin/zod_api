@@ -92,7 +92,15 @@ export function serve<const T extends ApiServerConfig>(
   apiServerHandlers: ApiServerHandlers<T>,
 ) {
   return Deno.serve(apiServerConfig.options ?? {}, async (req) => {
-    return await routeRequest(req, apiServerConfig, apiServerHandlers)
+    const res = await routeRequest(req, apiServerConfig, apiServerHandlers)
+
+    apiServerConfig.logger?.debug(
+      `[${req.method.toLowerCase()}] ${res.status}${
+        res.statusText ? ` ${res.statusText} ` : " "
+      }${new URL(req.url).pathname}`,
+    )
+
+    return res
   })
 }
 
@@ -186,19 +194,24 @@ async function routeRequest(
   apiServerHandlers: ApiServerHandlers<ApiServerConfig>,
 ): Promise<Response> {
   try {
-    // Run middleware and check for response
-    const middlewareResponse = await apiServerConfig.middleware?.(req)
-    if (middlewareResponse) {
-      apiServerConfig.logger?.debug(
-        "Returning middleware response for request:",
-        req,
-      )
-
-      return middlewareResponse
-    }
-
     // Get action method
     const method = req.method.toLowerCase() as ApiActionMethod
+
+    // Run middleware and check for response
+    const middleware = apiServerConfig.middleware
+    if (middleware) {
+      const res = await middleware(req)
+
+      apiServerConfig.logger?.debug(
+        `[${method}] Middleware${
+          res ? ` ${res.status} ${res.statusText} ` : ""
+        }${req.url}`,
+      )
+
+      if (res) {
+        return res
+      }
+    }
 
     // Collect resource handlers + config
     const resourceHandlers = Object.entries(apiServerHandlers).map((
@@ -221,10 +234,6 @@ async function routeRequest(
       // Get correct action handler, return method not allowed response if not set
       const actionHandler = actionHandlers[method]
       if (!actionHandler) {
-        apiServerConfig.logger?.debug(
-          `No [${method}] action handler found for resource ${resourceConfig.path}`,
-        )
-
         return methodNotAllowed()
       }
 
@@ -245,10 +254,6 @@ async function routeRequest(
 
       // Return bad request response if context not set
       if (!ctx) {
-        apiServerConfig.logger?.debug(
-          "Action handler context was not parsed successfully",
-        )
-
         return badRequest()
       }
 
@@ -266,22 +271,10 @@ async function routeRequest(
           ? JSON.stringify(result.data)
           : `${result.data}`
 
-        apiServerConfig.logger?.debug(
-          `[${method}] action handler for resource ${resourceConfig.path} completed successfully, 
-          responding with data:`,
-          data,
-        )
-
         return ok(data)
       }
 
       // If result is not ok, return error response
-      apiServerConfig.logger?.debug(
-        `[${method}] action handler for resource ${resourceConfig.path} completed with error, 
-        responding with status:`,
-        `${result.status} ${result.message}`,
-      )
-
       return new Response(result.message, {
         status: result.status,
       })
