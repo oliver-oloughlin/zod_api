@@ -23,7 +23,7 @@ import {
 } from "./status_codes.ts"
 
 /**
- * Send a request and parse the result according to configurations
+ * Handles sending a request and parsing the result according to configurations.
  *
  * @param method
  * @param actionConfig
@@ -32,7 +32,7 @@ import {
  * @param params
  * @returns
  */
-export async function sendRequest<const T extends ApiActionConfig>(
+export async function handleRequest<const T extends ApiActionConfig>(
   method: ApiActionMethod,
   actionConfig: ApiActionConfig,
   resourceConfig: ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
@@ -66,17 +66,18 @@ export async function sendRequest<const T extends ApiActionConfig>(
     // Throttle request
     await apiClientConfig.throttle?.throttle()
 
-    // Log fetch event
+    // Log request
     apiClientConfig.logger?.debug(`[${method}] ${url}`)
 
-    // Send request with authentication
-    const res = await sendAuthenticatedRequest(
+    // Send request
+    const res = await sendRequest(
       url,
       requestInit,
       apiClientConfig,
       fetcher,
     )
 
+    // Log response
     apiClientConfig.logger?.debug(
       `[${method}] ${res.status}${
         res.statusText ? ` ${res.statusText} ` : ""
@@ -84,11 +85,6 @@ export async function sendRequest<const T extends ApiActionConfig>(
     )
 
     if (!res.ok) {
-      // Log HTTP error
-      apiClientConfig.logger?.debug(
-        `[${method}] error: ${url}, Status: ${res.status} ${res.statusText}`,
-      )
-
       // Return error response
       return {
         ok: false,
@@ -162,7 +158,7 @@ export async function sendRequest<const T extends ApiActionConfig>(
  * @param fetcher
  * @returns
  */
-async function sendAuthenticatedRequest(
+async function sendRequest(
   url: string,
   init: RequestInit,
   apiClientConfig: ApiClientConfig<Fetcher>,

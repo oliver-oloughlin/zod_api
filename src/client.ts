@@ -11,7 +11,7 @@ import type {
   PathlessApiResourceConfig,
   PossibleApiClientAction,
 } from "./types.ts"
-import { sendRequest } from "./utils/request.ts"
+import { handleRequest } from "./utils/request.ts"
 
 export function client<
   const T1 extends Fetcher,
@@ -65,7 +65,7 @@ function createApiClientAction<
 ): ApiClientAction<T1, T2, T3> {
   // Create handler function
   const handler: PossibleApiClientAction = async (params) => {
-    return await sendRequest(
+    return await handleRequest(
       method,
       actionConfig,
       resourceConfig,
