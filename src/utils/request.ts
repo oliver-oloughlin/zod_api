@@ -96,6 +96,8 @@ export async function handleRequest<const T extends ApiActionConfig>(
 
     // If no data schema, return successful response without data
     if (!actionConfig.dataSchema) {
+      await res.body?.cancel()
+
       return {
         ok: true,
         data: null,

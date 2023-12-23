@@ -22,12 +22,15 @@ import type {
 /*   CONFIG TYPES   */
 /*                  */
 /********************/
+
 export type ApiConfig = {
-  resources: Record<
-    string,
-    ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>
-  >
+  resources: ApiResourceRecord
 }
+
+export type ApiResourceRecord = Record<
+  string,
+  ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>
+>
 
 export type PathlessApiResourceConfig<T extends Path> =
   & {

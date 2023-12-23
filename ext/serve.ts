@@ -16,6 +16,7 @@ import {
   notFound,
   ok,
 } from "https://deno.land/x/monoutils@v0.3.1/response.ts"
+import { parseConfig } from "../src/utils/parse_config.ts"
 
 /*************/
 /*           */
@@ -74,6 +75,11 @@ export type ApiActionHandlerResult<T> =
 
 export type Middleware = (req: Request) => Response | Promise<Response> | void
 
+export type PreparedResourceHandler = {
+  resourceConfig: ApiResourceConfig<any, any>
+  resourceHandlers: ApiServerResourceHandlers<any>
+}
+
 /************************/
 /*                      */
 /*   PUBLIC FUNCTIONS   */
@@ -92,7 +98,11 @@ export function serve<const T extends ApiServerConfig>(
   apiServerHandlers: ApiServerHandlers<T>,
 ) {
   return Deno.serve(apiServerConfig.options ?? {}, async (req) => {
-    const res = await routeRequest(req, apiServerConfig, apiServerHandlers)
+    const res = await routeRequest(
+      req,
+      parseConfig(apiServerConfig),
+      prepareResourceHandlers(apiServerConfig, apiServerHandlers),
+    )
 
     apiServerConfig.logger?.debug(
       `[${req.method.toLowerCase()}] ${res.status}${
@@ -188,10 +198,23 @@ async function createActionHandlerContext(
   >
 }
 
+function prepareResourceHandlers(
+  apiServerConfig: ApiServerConfig,
+  apiServerHandlers: ApiServerHandlers<any>,
+): PreparedResourceHandler[] {
+  return Object.entries(apiServerHandlers).map((
+    [key, resourceHandlers],
+  ) => ({
+    resourceConfig: apiServerConfig.resources[key],
+    resourceHandlers,
+  }))
+    .sort((r) => (r.resourceConfig as any).urlParamsSchema ? 1 : -1)
+}
+
 async function routeRequest(
   req: Request,
   apiServerConfig: ApiServerConfig,
-  apiServerHandlers: ApiServerHandlers<ApiServerConfig>,
+  preparedResourceHandlers: PreparedResourceHandler[],
 ): Promise<Response> {
   try {
     // Get action method
@@ -213,16 +236,10 @@ async function routeRequest(
       }
     }
 
-    // Collect resource handlers + config
-    const resourceHandlers = Object.entries(apiServerHandlers).map((
-      [key, actionHandlers],
-    ) => ({
-      resourceConfig: apiServerConfig.resources[key],
-      actionHandlers,
-    }))
-
     // Loop over resource handlers and execute url pattern to find match
-    for (const { resourceConfig, actionHandlers } of resourceHandlers) {
+    for (
+      const { resourceConfig, resourceHandlers } of preparedResourceHandlers
+    ) {
       const pattern = new URLPattern({ pathname: resourceConfig.path })
       const patternResult = pattern.exec(req.url)
 
@@ -232,7 +249,7 @@ async function routeRequest(
       }
 
       // Get correct action handler, return method not allowed response if not set
-      const actionHandler = actionHandlers[method]
+      const actionHandler = resourceHandlers[method]
       if (!actionHandler) {
         return methodNotAllowed()
       }
