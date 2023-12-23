@@ -11,6 +11,7 @@ import type {
   PathlessApiResourceConfig,
   PossibleApiClientAction,
 } from "./types.ts"
+import { parseConfig } from "./utils/parse_config.ts"
 import { handleRequest } from "./utils/request.ts"
 
 export function client<
@@ -19,8 +20,10 @@ export function client<
 >(
   config: T2,
 ): ApiClient<T2> {
+  const apiConfig = parseConfig(config)
+
   const resourceEntries = Object
-    .entries(config.resources)
+    .entries(apiConfig.resources)
     .map(([key, resourceConfig]) => [
       key,
       createApiClientActions(resourceConfig, config),
