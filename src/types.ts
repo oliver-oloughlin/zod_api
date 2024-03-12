@@ -244,7 +244,7 @@ export type BasicAuthOptions = {
 /*                   */
 /*********************/
 
-export type BodylessApiActionMethod = "get" | "head"
+export type BodylessApiActionMethod = "get"
 
 export type BodyfullApiActionMethod =
   | "post"

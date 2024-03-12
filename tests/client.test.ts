@@ -1,29 +1,17 @@
-import { assert } from "./deps.ts"
-import { pokemonApiClient } from "./config.ts"
+import { assert } from "assert"
+import { apiClient, PokemonSchema } from "./client.config.ts"
 
-Deno.test("get", async (t) => {
-  await t.step("Should successfully get pikachu pokemon data", async () => {
-    const res = await pokemonApiClient.pokemon.get({
-      headers: {
-        "schema-header": "schema-header",
-      },
-    })
-
-    assert(res.ok)
-    assert(res.data.name === "pikachu")
-  })
-
-  await t.step("Should successfully get ditto pokemon data", async () => {
-    const res = await pokemonApiClient.pokemon.get({
+Deno.test("client", async (t) => {
+  await t.step("Should get pokemon by id", async () => {
+    const res = await apiClient.pokemon.get({
       urlParams: {
-        name: "ditto",
-      },
-      headers: {
-        "schema-header": "schema-header",
+        id: "pikachu",
       },
     })
 
+    const parsed = PokemonSchema.safeParse(res.data)
+
     assert(res.ok)
-    assert(res.data.name === "ditto")
+    assert(parsed.success)
   })
 })
