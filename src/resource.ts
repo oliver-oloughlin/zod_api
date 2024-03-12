@@ -10,9 +10,9 @@ export function resource<
 >(
   path: T1,
   config: T2,
-) {
+): ApiResourceConfig<T1, T2> {
   return {
     path,
     ...config,
-  } as ApiResourceConfig<T1, T2>
+  }
 }

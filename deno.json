@@ -1,10 +1,11 @@
 {
   "name": "@olli/zod-api",
-  "version": "0.9.0",
+  "version": "0.9.0-alpha.1",
   "tasks": {
     "check": "deno check ./*.ts ./server/*.ts",
     "test": "deno test -A",
-    "prep": "deno task check && deno lint && deno publish --dry-run && deno fmt && deno task test"
+    "prep": "deno task check && deno lint && deno publish --dry-run && deno fmt && deno task test",
+    "cache": "deno cache -r mod.ts server/deno.ts"
   },
   "imports": {
     "zod": "npm:zod@^3.22.4",
@@ -17,11 +18,9 @@
     "./server/deno": "./server/deno.ts"
   },
   "fmt": {
-    "semiColons": false,
-    "exclude": ["./npm"]
+    "semiColons": false
   },
   "lint": {
-    "exclude": ["./npm", "./t.ts"],
     "rules": {
       "exclude": ["no-explicit-any"]
     }

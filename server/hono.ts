@@ -8,7 +8,7 @@ import type {
   Path,
   PathlessApiResourceConfig,
 } from "../src/types.ts"
-import { Hono } from "hono"
+import { type Env, Hono, type Schema } from "hono"
 import { safeCoerceObject } from "./utils/zod.ts"
 
 // Types
@@ -67,7 +67,7 @@ export type PreparedResourceHandler = {
 export function hono<const T extends ApiServerConfig>(
   apiServerConfig: T,
   apiServerHandlers: ApiServerHandlers<T>,
-) {
+): Hono<Env, Schema, "/"> {
   const app = new Hono()
   const handlerEntries = Object.entries(apiServerHandlers)
 

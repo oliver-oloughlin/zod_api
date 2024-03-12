@@ -96,7 +96,7 @@ export type PreparedResourceHandler = {
 export function serve<const T extends ApiServerConfig>(
   apiServerConfig: T,
   apiServerHandlers: ApiServerHandlers<T>,
-) {
+): Deno.HttpServer {
   return Deno.serve(apiServerConfig.options ?? {}, async (req) => {
     const res = await routeRequest(
       req,

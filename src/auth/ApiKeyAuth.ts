@@ -18,7 +18,7 @@ export class ApiKeyAuth implements Auth {
     this.id = id
   }
 
-  createAuthHeaders() {
+  createAuthHeaders(): HeadersInit {
     return {
       [this.keyHeader]: this.key,
       ...(this.id ? { [this.idHeader]: this.id } : {}),

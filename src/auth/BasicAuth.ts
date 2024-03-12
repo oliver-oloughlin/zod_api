@@ -9,7 +9,7 @@ export class BasicAuth implements Auth {
     this.secret = secret
   }
 
-  createAuthHeaders() {
+  createAuthHeaders(): HeadersInit {
     return {
       Authorization: `Basic ${btoa(`${this.id}:${this.secret}`)}`,
     }
