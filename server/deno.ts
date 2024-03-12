@@ -6,16 +6,16 @@ import type {
   Logger,
   Path,
   PathlessApiResourceConfig,
-} from "../mod.ts"
+} from "../src/types.ts"
 import type { TypeOf, ZodType } from "zod"
-import { safeCoerceObject } from "https://deno.land/x/monoutils@v0.3.1/zod.ts"
+import { safeCoerceObject } from "./utils/zod.ts"
 import {
   badRequest,
   internalServerError,
   methodNotAllowed,
   notFound,
   ok,
-} from "https://deno.land/x/monoutils@v0.3.1/response.ts"
+} from "./utils/response.ts"
 import { parseConfig } from "../src/utils/parse_config.ts"
 
 /*************/

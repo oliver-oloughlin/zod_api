@@ -1,0 +1,33 @@
+{
+  "version": "3",
+  "packages": {
+    "specifiers": {
+      "jsr:@std/assert@^0.219.0": "jsr:@std/assert@0.219.1",
+      "npm:hono@^4.1.0": "npm:hono@4.1.0",
+      "npm:zod@^3.22.4": "npm:zod@3.22.4"
+    },
+    "jsr": {
+      "@std/assert@0.219.1": {
+        "integrity": "e76c2a1799a78f0f4db7de04bdc9b908a7a4b821bb65eda0285885297d4fb8af"
+      }
+    },
+    "npm": {
+      "hono@4.1.0": {
+        "integrity": "sha512-9no6DCHb4ijB1tWdFXU6JnrnFgzwVZ1cnIcS1BjAFnMcjbtBTOMsQrDrPH3GXbkNEEEkj8kWqcYBy8Qc0bBkJQ==",
+        "dependencies": {}
+      },
+      "zod@3.22.4": {
+        "integrity": "sha512-iC+8Io04lddc+mVqQ9AZ7OQ2MrUKGN+oIQyq1vemgt46jwCwLfhq7/pwnBnNXXXZb8VTVLKwp9EDkx+ryxIWmg==",
+        "dependencies": {}
+      }
+    }
+  },
+  "remote": {},
+  "workspace": {
+    "dependencies": [
+      "jsr:@std/assert@^0.219.0",
+      "npm:hono@^4.1.0",
+      "npm:zod@^3.22.4"
+    ]
+  }
+}
