@@ -1,6 +1,6 @@
 {
   "name": "@olli/zod-api",
-  "version": "0.9.0-alpha.1",
+  "version": "0.9.0-alpha.2",
   "tasks": {
     "check": "deno check ./*.ts ./server/*.ts",
     "test": "deno test -A",
@@ -15,7 +15,8 @@
   "exports": {
     ".": "./mod.ts",
     "./server/hono": "./server/hono.ts",
-    "./server/deno": "./server/deno.ts"
+    "./server/deno": "./server/deno.ts",
+    "./server/types": "./server/types.ts"
   },
   "fmt": {
     "semiColons": false

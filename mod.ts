@@ -1,10 +1,13 @@
-// Export all errors
-export * from "./src/errors.ts"
-
 // Export ZodApi functions
 export { client } from "./src/client.ts"
 export { config } from "./src/config.ts"
 export { resource } from "./src/resource.ts"
+
+// Export all errors
+export * from "./src/errors.ts"
+
+// Export all types
+export type * from "./src/types.ts"
 
 // Export implemented auth strategies
 export { BearerTokenAuth } from "./src/auth/BearerTokenAuth.ts"
