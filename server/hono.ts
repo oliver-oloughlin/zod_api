@@ -1,70 +1,17 @@
-import { z } from "zod"
 import type {
   ApiActionMethod,
   ApiBodyfullActionConfig,
-  ApiConfig,
   ApiResourceConfig,
-  Logger,
-  Path,
   PathlessApiResourceConfig,
 } from "../src/types.ts"
 import { type Env, Hono, type Schema } from "hono"
 import { safeCoerceObject } from "./utils/zod.ts"
+import { HonoApiServerConfig } from "./types.ts"
+import { ApiServerHandlers } from "./types.ts"
+import { ApiActionHandlerResult } from "./types.ts"
+import { ApiActionHandlerContext } from "./types.ts"
 
-// Types
-export type ApiServerConfig = ApiConfig & {
-  logger?: Logger
-}
-
-export type ApiServerHandlers<T extends ApiServerConfig> = {
-  [K in keyof T["resources"]]: ApiServerResourceHandlers<T["resources"][K]>
-}
-
-export type ApiServerResourceHandlers<
-  T extends ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>,
-> = {
-  [K in keyof T["actions"]]: (
-    req: Request,
-    ctx: ApiActionHandlerContext<T["actions"][K], T>,
-  ) =>
-    | ApiActionHandlerResult<T["actions"][K]>
-    | Promise<ApiActionHandlerResult<T["actions"][K]>>
-}
-
-export type ApiActionHandlerContext<T1, T2> =
-  & (T1 extends { bodySchema: z.ZodType } ? { body: z.TypeOf<T1["bodySchema"]> }
-    : Record<string, never>)
-  & (T1 extends { searchParamsSchema: z.ZodType }
-    ? { searchParams: z.TypeOf<T1["searchParamsSchema"]> }
-    : Record<string, never>)
-  & (T1 extends { headersSchema: z.ZodType }
-    ? { headers: z.TypeOf<T1["headersSchema"]> }
-    : Record<string, never>)
-  & (T2 extends { urlParamsSchema: z.ZodType }
-    ? { urlParams: z.TypeOf<T2["urlParamsSchema"]> }
-    : Record<string, never>)
-
-export type ApiActionHandlerResult<T> =
-  | (T extends { dataSchema: z.ZodType } ? {
-      ok: true
-      data: z.TypeOf<T["dataSchema"]>
-    }
-    : {
-      ok: true
-      data?: never
-    })
-  | {
-    ok: false
-    status: number
-    message?: string
-  }
-
-export type PreparedResourceHandler = {
-  resourceConfig: ApiResourceConfig<any, any>
-  resourceHandlers: ApiServerResourceHandlers<any>
-}
-
-export function hono<const T extends ApiServerConfig>(
+export function hono<const T extends HonoApiServerConfig>(
   apiServerConfig: T,
   apiServerHandlers: ApiServerHandlers<T>,
 ): Hono<Env, Schema, "/"> {
