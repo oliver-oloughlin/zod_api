@@ -1,5 +1,38 @@
 import type { ApiKeyAuthOptions, Auth } from "../types.ts"
 
+/**
+ * Authentication using API key
+ *
+ * @example
+ * ```ts
+ * import { client, ApiKeyAuth } from "zod-api"
+ *
+ * const apiClient = client({
+ *   baseUrl: "...",
+ *   auth: new ApiKeyAuth({ key: "{api_key}" }),
+ *   resources: {...}
+ * })
+ * ```
+ *
+ * @example
+ * ```ts
+ * import { client, ApiKeyAuth } from "zod-api"
+ *
+ * const apiClient = client({
+ *   baseUrl: "...",
+ *
+ *   // Set app id and custom headers
+ *   auth: new ApiKeyAuth({
+ *     key: "{api_key}"
+ *     keyHeader: "x-api-key",
+ *     id: "{app_id}",
+ *     idHeader: "x-app-id"
+ *   }),
+ *
+ *   resources: {...}
+ * })
+ * ```
+ */
 export class ApiKeyAuth implements Auth {
   private key: string
   private keyHeader: string
