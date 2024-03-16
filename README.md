@@ -5,7 +5,7 @@ Configure strongly typed API clients and endpoints using Zod schemas.
 ## Client
 
 ```ts
-import { client, resource } from "zod_api"
+import { client, resource } from "@olli/zod-api"
 
 const apiClient = client({
   baseUrl: "https://someapi.com/v1",
@@ -78,7 +78,7 @@ import {
   BearerTokenAuth,
   client,
   resource,
-} from "./mod.ts"
+} from "@olli/zod-api"
 
 // Schemas
 const ArtistSchema = z.object({
@@ -148,13 +148,13 @@ const spotifyApiClient = client({
 })
 ```
 
-## Server (Deno specific)
+## Server (Deno)
 
 Create a server with strongly typed endpoints:
 
 ```ts
-import { resource } from "zod_api"
-import { serve } from "zod_api/ext/serve"
+import { resource } from "@olli/zod-api"
+import { serve } from "@olli/zod-api/server/deno"
 
 serve({
   // Set options (optional)
@@ -209,14 +209,14 @@ serve({
 })
 ```
 
-## Client & Server (Deno specific)
+## Client & Server (Deno)
 
 When you want to configure both the client and the server for maximum
 synchronization, you can do it the following way:
 
 ```ts
-import { client, config, resource } from "zod_api"
-import { serve } from "zod_api/ext/serve"
+import { client, config, resource } from "@olli/zod-api"
+import { serve } from "@olli/zod-api/server/deno"
 
 // in config.ts
 const apiConfig = config({

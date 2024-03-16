@@ -1,3 +1,40 @@
+/**
+ * @module # Deno Server
+ *
+ * Serve HTTP requests based on api config using `Deno.serve()`.
+ *
+ * @example
+ * ```ts
+ * import { resource } from "@olli/zod-api"
+ * import { serve } from "@olli/zod-api/server/deno"
+ *
+ * serve({
+ *   resources: {
+ *     foo: resource("/foo/:id", {
+ *       urlParamsSchema: z.object({
+ *         id: z.string(),
+ *       }),
+ *       actions: {
+ *         get: {
+ *           dataSchema: z.string()
+ *         }
+ *       }
+ *     })
+ *   }
+ * }, {
+ *   foo: {
+ *     get(_req, ctx) {
+ *       const id = ctx.urlParams.id
+ *       return {
+ *         ok: true,
+ *         data: `Hello ${id}!`
+ *       }
+ *     }
+ *   }
+ * })
+ * ```
+ */
+
 import type {
   ApiActionMethod,
   ApiBodyfullActionConfig,

@@ -23,15 +23,18 @@ import type {
 /*                  */
 /********************/
 
+/** Zod API Configurations  */
 export type ApiConfig = {
   resources: ApiResourceRecord
 }
 
+/** Record of Zod API resource configurations */
 export type ApiResourceRecord = Record<
   string,
   ApiResourceConfig<Path, PathlessApiResourceConfig<Path>>
 >
 
+/** Zod API resource configruation without `path` option */
 export type PathlessApiResourceConfig<T extends Path> =
   & {
     actions: ApiActionsConfig
@@ -43,6 +46,7 @@ export type PathlessApiResourceConfig<T extends Path> =
       }
   )
 
+/** Zod API resource configruation with `path` option */
 export type ApiResourceConfig<
   T1 extends Path,
   T2 extends PathlessApiResourceConfig<T1>,
@@ -52,6 +56,7 @@ export type ApiResourceConfig<
     path: T1
   }
 
+/** Zod API action configurations record */
 export type ApiActionsConfig =
   & {
     [K in BodylessApiActionMethod]?: ApiBodylessActionConfig
@@ -60,8 +65,10 @@ export type ApiActionsConfig =
     [K in BodyfullApiActionMethod]?: ApiBodyfullActionConfig
   }
 
+/** Zod API action configuration */
 export type ApiActionConfig = ApiBodylessActionConfig | ApiBodyfullActionConfig
 
+/** Zod API bodyless action configuration */
 export type ApiBodylessActionConfig = {
   searchParamsSchema?: ParamsSchema
   headersSchema?: ParamsSchema
@@ -69,6 +76,7 @@ export type ApiBodylessActionConfig = {
   dataType?: DataType
 }
 
+/** Zod API bodyfull action configuration */
 export type ApiBodyfullActionConfig = ApiBodylessActionConfig & {
   bodySchema?: ZodObject<ZodRawShape>
   bodyType?: BodyType
@@ -79,6 +87,8 @@ export type ApiBodyfullActionConfig = ApiBodylessActionConfig & {
 /*   CLIENT TYPES   */
 /*                  */
 /********************/
+
+/** Zod API client configruation */
 export type ApiClientConfig<T extends Fetcher> = ApiConfig & {
   /** Base URL for API */
   baseUrl: string
