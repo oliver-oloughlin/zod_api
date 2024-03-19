@@ -4,7 +4,7 @@
   "tasks": {
     "check": "deno check ./*.ts ./server/*.ts",
     "test": "deno test -A",
-    "prep": "deno task check && deno lint && deno publish --dry-run && deno fmt && deno task test",
+    "prep": "deno task check && deno lint && deno publish --dry-run --allow-slow-types && deno fmt && deno task test",
     "cache": "deno cache -r mod.ts server/deno.ts"
   },
   "imports": {
@@ -22,7 +22,7 @@
   },
   "lint": {
     "rules": {
-      "exclude": ["no-explicit-any"]
+      "exclude": ["no-explicit-any", "no-slow-types"]
     }
   },
   "test": {
