@@ -150,11 +150,11 @@ Deno.test("Expect type error when using incorrect branded type", () => {
 Deno.test("Expect type error when not using brands when brands are required", () => {
   // dryrun, test will fail to build if it ever doesn't produce an error
   api.endpointForUsers.delete({
-    // @ts-expect-error this should be userToken, appToken should be catched by typeguard
+    // @ts-expect-error this should be userToken, string should be catched by typeguard
     body: { Authorization: "Bearer something" },
-    // @ts-expect-error this should be userToken, appToken should be catched by typeguard
+    // @ts-expect-error this should be userToken, string should be catched by typeguard
     headers: { Authorization: "Bearer something" },
-    // @ts-expect-error this should be userToken, appToken should be catched by typeguard
+    // @ts-expect-error this should be userToken, string should be catched by typeguard
     searchParams: { Authorization: "Bearer something" },
   })
 })
