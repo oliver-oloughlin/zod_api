@@ -1,4 +1,4 @@
-import { Throttle } from "../types.ts"
+import type { Throttle } from "../types.ts"
 import { sleep } from "../utils/sleep.ts"
 
 /**

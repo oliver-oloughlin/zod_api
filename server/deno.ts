@@ -51,8 +51,8 @@ import {
 } from "./utils/response.ts"
 import { parseConfig } from "../src/utils/parse_config.ts"
 import type { ApiServerHandlers, DenoApiServerConfig } from "./types.ts"
-import { ApiActionHandlerContext } from "./types.ts"
-import { PreparedResourceHandler } from "./types.ts"
+import type { ApiActionHandlerContext } from "./types.ts"
+import type { PreparedResourceHandler } from "./types.ts"
 
 /************************/
 /*                      */
