@@ -6,10 +6,10 @@ import type {
 } from "../src/types.ts"
 import { type Env, Hono, type Schema } from "hono"
 import { safeCoerceObject } from "./utils/zod.ts"
-import { HonoApiServerConfig } from "./types.ts"
-import { ApiServerHandlers } from "./types.ts"
-import { ApiActionHandlerResult } from "./types.ts"
-import { ApiActionHandlerContext } from "./types.ts"
+import type { HonoApiServerConfig } from "./types.ts"
+import type { ApiServerHandlers } from "./types.ts"
+import type { ApiActionHandlerResult } from "./types.ts"
+import type { ApiActionHandlerContext } from "./types.ts"
 
 export function hono<const T extends HonoApiServerConfig>(
   apiServerConfig: T,
