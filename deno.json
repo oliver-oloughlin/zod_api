@@ -1,6 +1,6 @@
 {
   "name": "@olli/zod-api",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "tasks": {
     "check": "deno check ./*.ts ./server/*.ts",
     "test": "deno test -A",
