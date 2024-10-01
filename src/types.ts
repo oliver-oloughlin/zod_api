@@ -5,6 +5,7 @@ import type {
   ZodBoolean,
   ZodDate,
   ZodDefault,
+  ZodEffects,
   ZodEnum,
   ZodLiteral,
   ZodNullable,
@@ -14,6 +15,7 @@ import type {
   ZodRawShape,
   ZodString,
   ZodType,
+  ZodTypeDef,
   ZodUnion,
 } from "zod"
 
@@ -272,6 +274,18 @@ export type PrimitiveParamProperty =
   | ZodEnum<[string, ...string[]]>
   | ZodLiteral<number | string | boolean | bigint>
 
+type EffectParamProperty = ZodEffects<
+  PrimitiveParamProperty,
+  unknown,
+  number | string | boolean | bigint
+>
+
+type ZodTypeParamProperty = ZodType<
+  unknown,
+  ZodTypeDef,
+  unknown
+>
+
 export type ParamProperty =
   | PrimitiveParamProperty
   | ZodUnion<[ParamProperty, ...ParamProperty[]]>
@@ -283,6 +297,8 @@ export type ParamsSchema<T extends string = string> = ZodObject<
       | ParamProperty
       | ZodOptional<ParamProperty>
       | ZodNullable<ParamProperty>
+      | EffectParamProperty
+      | ZodTypeParamProperty
   }
 >
 
