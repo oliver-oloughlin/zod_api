@@ -1,5 +1,8 @@
 # zod_api
 
+_⚠️ This project is superseded by
+[jex](https://github.com/oliver-oloughlin/jex)_
+
 Configure strongly typed API clients and endpoints using Zod schemas.
 
 ## Client
